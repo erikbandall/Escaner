@@ -1,0 +1,577 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scanner de Código de Barras</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&display=swap');
+
+:root {
+–bg: #0a0c0f;
+–panel: #111418;
+–border: #1e2530;
+–accent: #00e5ff;
+–accent2: #ff6b00;
+–green: #00ff88;
+–red: #ff3366;
+–text: #c8d8e8;
+–muted: #4a5a6a;
+}
+
+- { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+background: var(–bg);
+font-family: 'Barlow Condensed', sans-serif;
+color: var(–text);
+min-height: 100vh;
+display: flex;
+flex-direction: column;
+align-items: center;
+padding: 24px 16px;
+background-image:
+linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+background-size: 40px 40px;
+}
+
+header { text-align: center; margin-bottom: 28px; }
+
+.logo-line { display: flex; align-items: center; gap: 12px; justify-content: center; margin-bottom: 4px; }
+
+h1 { font-size: 2.2rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; }
+h1 span { color: var(–accent); }
+.subtitle { font-size: 0.85rem; color: var(–muted); letter-spacing: 0.15em; text-transform: uppercase; }
+
+.main-card {
+background: var(–panel);
+border: 1px solid var(–border);
+border-radius: 4px;
+width: 100%;
+max-width: 620px;
+overflow: hidden;
+box-shadow: 0 0 60px rgba(0,0,0,0.6);
+margin-bottom: 20px;
+}
+
+.card-header {
+background: linear-gradient(90deg, rgba(0,229,255,0.08), transparent);
+border-bottom: 1px solid var(–border);
+padding: 12px 22px;
+display: flex;
+align-items: center;
+gap: 10px;
+}
+
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(–accent); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;}50%{opacity:0.3;} }
+
+.card-title { font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(–accent); font-weight: 600; flex: 1; }
+
+/* Camera Section */
+.camera-section { padding: 22px; border-bottom: 1px solid var(–border); }
+
+.camera-btn-row { display: flex; gap: 10px; margin-bottom: 16px; }
+
+.btn {
+flex: 1;
+padding: 13px;
+border: none;
+border-radius: 3px;
+font-family: 'Barlow Condensed', sans-serif;
+font-size: 0.9rem;
+font-weight: 700;
+letter-spacing: 0.12em;
+text-transform: uppercase;
+cursor: pointer;
+transition: all 0.15s;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 8px;
+}
+
+.btn-primary { background: var(–accent); color: #000; }
+.btn-primary:hover { background: #33eeff; }
+.btn-danger  { background: var(–red); color: #fff; }
+.btn-danger:hover { background: #ff5577; }
+.btn-secondary { background: transparent; border: 1px solid var(–border); color: var(–text); }
+.btn-secondary:hover { border-color: var(–accent); color: var(–accent); }
+
+/* Viewport */
+#scannerViewport {
+position: relative;
+width: 100%;
+border-radius: 3px;
+overflow: hidden;
+background: #000;
+display: none;
+border: 2px solid var(–border);
+min-height: 220px;
+}
+
+#scannerViewport video { width: 100% !important; height: auto !important; display: block; }
+#scannerViewport canvas.drawingBuffer { position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; }
+
+.laser {
+position: absolute;
+left: 8%; right: 8%;
+height: 2px;
+background: var(–accent);
+box-shadow: 0 0 12px var(–accent), 0 0 30px var(–accent);
+animation: laserScan 2s ease-in-out infinite;
+top: 50%;
+z-index: 10;
+pointer-events: none;
+}
+
+@keyframes laserScan { 0%{top:20%;}50%{top:80%;}100%{top:20%;} }
+
+.scan-frame {
+position: absolute;
+inset: 10%;
+border: 2px solid rgba(0,229,255,0.4);
+border-radius: 4px;
+z-index: 9;
+pointer-events: none;
+}
+
+.scan-frame::before,.scan-frame::after,.scan-frame>span::before,.scan-frame>span::after {
+content:''; position:absolute; width:20px; height:20px;
+border-color:var(–accent); border-style:solid;
+}
+.scan-frame::before  { top:-2px;left:-2px;border-width:3px 0 0 3px; }
+.scan-frame::after   { top:-2px;right:-2px;border-width:3px 3px 0 0; }
+.scan-frame>span::before { bottom:-2px;left:-2px;border-width:0 0 3px 3px; }
+.scan-frame>span::after  { bottom:-2px;right:-2px;border-width:0 3px 3px 0; }
+
+.scanning-label {
+position: absolute;
+bottom: 12px;
+left: 50%;
+transform: translateX(-50%);
+background: rgba(0,0,0,0.75);
+color: var(–accent);
+font-size: 0.72rem;
+letter-spacing: 0.2em;
+text-transform: uppercase;
+padding: 5px 14px;
+border-radius: 2px;
+z-index: 11;
+font-family: 'Share Tech Mono', monospace;
+animation: blink 1s infinite;
+white-space: nowrap;
+}
+
+@keyframes blink { 0%,100%{opacity:1;}50%{opacity:0.4;} }
+
+.cam-status {
+display: flex; align-items: center; gap: 8px;
+font-size: 0.75rem; letter-spacing: 0.08em; color: var(–muted);
+margin-top: 10px;
+}
+
+.cam-status .s-dot { width:7px;height:7px;border-radius:50%;background:var(–muted);flex-shrink:0; }
+.cam-status.active .s-dot { background:var(–green);animation:pulse 1s infinite; }
+.cam-status.active { color: var(–green); }
+.cam-status.error .s-dot { background: var(–red); }
+.cam-status.error { color: var(–red); }
+
+/* Manual */
+.manual-section { padding: 22px; border-bottom: 1px solid var(–border); }
+
+.section-label {
+font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase;
+color: var(–muted); margin-bottom: 10px;
+display: flex; align-items: center; gap: 8px;
+}
+.section-label::before,.section-label::after { content:''; flex:1; height:1px; background:var(–border); }
+
+.input-row { display: flex; gap: 10px; }
+
+#barcodeInput {
+flex: 1;
+background: #0d1117;
+border: 1px solid var(–border);
+border-radius: 3px;
+padding: 12px 16px;
+font-family: 'Share Tech Mono', monospace;
+font-size: 1rem;
+color: var(–accent);
+letter-spacing: 0.1em;
+outline: none;
+transition: border-color 0.2s, box-shadow 0.2s;
+}
+#barcodeInput:focus { border-color: var(–accent); box-shadow: 0 0 15px rgba(0,229,255,0.2); }
+#barcodeInput::placeholder { color: var(–muted); font-size: 0.8rem; }
+
+/* Results */
+.results-zone { padding: 22px; }
+
+.breakdown-title {
+font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase;
+color: var(–muted); margin-bottom: 12px;
+display: flex; align-items: center; gap: 8px;
+}
+.breakdown-title::after { content:''; flex:1; height:1px; background:var(–border); }
+
+.breakdown-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+
+.breakdown-item { background: #0d1117; border: 1px solid var(–border); border-radius: 3px; padding: 10px 14px; }
+.bi-label { font-size: 0.68rem; color: var(–muted); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 4px; }
+.bi-value { font-family: 'Share Tech Mono', monospace; font-size: 1rem; color: var(–text); }
+.breakdown-item.hl { border-color: rgba(0,229,255,0.3); background: rgba(0,229,255,0.04); }
+.breakdown-item.hl .bi-value { color: var(–accent); }
+
+.formula-box {
+background: #0d1117;
+border: 1px solid var(–border);
+border-radius: 3px;
+padding: 12px 16px;
+margin-bottom: 14px;
+font-family: 'Share Tech Mono', monospace;
+font-size: 0.88rem;
+color: var(–muted);
+display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.f-val  { color: var(–accent); }
+.f-op   { color: var(–accent2); }
+.f-const { color: var(–text); }
+
+.result-box {
+border: 1px solid var(–green);
+background: rgba(0,255,136,0.04);
+border-radius: 4px;
+padding: 18px 22px;
+display: flex; align-items: center; justify-content: space-between;
+box-shadow: 0 0 30px rgba(0,255,136,0.08);
+animation: flashGreen 0.4s ease;
+}
+
+@keyframes flashGreen { 0%{box-shadow:0 0 60px rgba(0,255,136,0.5);}100%{box-shadow:0 0 30px rgba(0,255,136,0.08);} }
+
+.result-label { font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(–green); margin-bottom: 4px; }
+.result-value { font-family: 'Share Tech Mono', monospace; font-size: 2rem; color: #fff; }
+.result-unit  { font-size: 0.9rem; color: var(–muted); margin-left: 4px; }
+.result-badge { background: var(–green); color: #000; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; padding: 6px 12px; border-radius: 2px; }
+
+.error-box {
+border: 1px solid var(–red); background: rgba(255,51,102,0.05);
+border-radius: 4px; padding: 14px 18px; color: var(–red);
+font-size: 0.88rem; display: flex; align-items: center; gap: 10px;
+}
+
+#idleMsg { text-align: center; color: var(–muted); font-size: 0.85rem; letter-spacing: 0.1em; padding: 10px 0; }
+
+/* History */
+.history-section { width: 100%; max-width: 620px; }
+.history-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.history-title { font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(–muted); }
+.clear-btn { background:none;border:1px solid var(–border);color:var(–muted);font-family:'Barlow Condensed',sans-serif;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;padding:4px 10px;border-radius:2px;cursor:pointer;transition:color 0.2s,border-color 0.2s; }
+.clear-btn:hover { color:var(–red);border-color:var(–red); }
+.history-list { display:flex;flex-direction:column;gap:6px; }
+.history-item { background:var(–panel);border:1px solid var(–border);border-radius:3px;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;animation:slideIn 0.2s ease; }
+@keyframes slideIn { from{opacity:0;transform:translateY(-5px);}to{opacity:1;transform:translateY(0);} }
+.hi-code { font-family:'Share Tech Mono',monospace;color:var(–muted);font-size:0.72rem; }
+.hi-scan { font-family:'Share Tech Mono',monospace;color:var(–accent);font-size:0.88rem; }
+.hi-res  { font-family:'Share Tech Mono',monospace;color:var(–green);font-size:0.88rem; }
+.hi-res small { color:var(–muted);font-size:0.68rem; }
+
+@media (max-width:480px) {
+.breakdown-grid { grid-template-columns: 1fr; }
+.result-value { font-size: 1.6rem; }
+h1 { font-size: 1.8rem; }
+}
+</style>
+
+</head>
+<body>
+
+<header>
+  <div class="logo-line">
+    <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+      <rect x="2" y="6" width="3" height="24" fill="#00e5ff"/>
+      <rect x="7" y="6" width="1.5" height="24" fill="#00e5ff" opacity="0.6"/>
+      <rect x="10" y="6" width="3.5" height="24" fill="#00e5ff"/>
+      <rect x="15" y="6" width="1.5" height="24" fill="#00e5ff" opacity="0.5"/>
+      <rect x="18" y="6" width="2" height="24" fill="#00e5ff"/>
+      <rect x="22" y="6" width="4" height="24" fill="#00e5ff"/>
+      <rect x="28" y="6" width="1.5" height="24" fill="#00e5ff" opacity="0.6"/>
+      <rect x="31" y="6" width="3" height="24" fill="#00e5ff"/>
+    </svg>
+    <h1>BAR<span>SCAN</span></h1>
+  </div>
+  <p class="subtitle">Sistema de medición por código de barras</p>
+</header>
+
+<div class="main-card">
+  <div class="card-header">
+    <div class="dot"></div>
+    <span class="card-title">Escáner con Cámara</span>
+  </div>
+
+  <!-- Camera -->
+
+  <div class="camera-section">
+    <div class="camera-btn-row">
+      <button class="btn btn-primary" id="startBtn" onclick="startScanner()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="8" cy="8" r="2.5" fill="currentColor"/>
+        </svg>
+        ACTIVAR CÁMARA
+      </button>
+      <button class="btn btn-danger" id="stopBtn" onclick="stopScanner()" style="display:none;">
+        ■ DETENER
+      </button>
+    </div>
+
+```
+<div id="scannerViewport">
+  <div class="scan-frame"><span></span></div>
+  <div class="laser"></div>
+  <span class="scanning-label">ESCANEANDO -- APUNTA AL CÓDIGO</span>
+</div>
+
+<div class="cam-status" id="camStatus">
+  <div class="s-dot"></div>
+  <span id="camStatusText">Presiona "Activar Cámara" para comenzar</span>
+</div>
+```
+
+  </div>
+
+  <!-- Manual -->
+
+  <div class="manual-section">
+    <div class="section-label">o ingresa manualmente</div>
+    <div class="input-row">
+      <input type="text" id="barcodeInput" placeholder="Escribe o pega el código aquí..." autocomplete="off"/>
+      <button class="btn btn-secondary" style="flex:0;padding:12px 20px;" onclick="processManual()">IR</button>
+    </div>
+  </div>
+
+  <!-- Results -->
+
+  <div class="results-zone">
+    <div id="idleMsg">Esperando escaneo...</div>
+    <div id="resultContent" style="display:none;">
+      <p class="breakdown-title">Desglose del código</p>
+      <div class="breakdown-grid">
+        <div class="breakdown-item">
+          <div class="bi-label">Código completo</div>
+          <div class="bi-value" id="rFull">--</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="bi-label">Últimos 5 dígitos</div>
+          <div class="bi-value" id="rLast5">--</div>
+        </div>
+        <div class="breakdown-item hl">
+          <div class="bi-label">Entero · mm (3 díg.)</div>
+          <div class="bi-value" id="rInt">--</div>
+        </div>
+        <div class="breakdown-item hl">
+          <div class="bi-label">Decimal (2 díg.)</div>
+          <div class="bi-value" id="rDec">--</div>
+        </div>
+      </div>
+
+```
+  <p class="breakdown-title">Cálculo</p>
+  <div class="formula-box">
+    <span class="f-val" id="fScanned">--</span>
+    <span class="f-op">−</span><span class="f-const">204</span>
+    <span class="f-op">−</span><span class="f-const">47.525</span>
+    <span class="f-op">=</span>
+    <span class="f-val" id="fResult">--</span>
+    <span style="color:var(--muted);font-size:0.8rem">mm</span>
+  </div>
+
+  <div class="result-box" id="resultBox" style="display:none;">
+    <div>
+      <div class="result-label">Resultado Final</div>
+      <div class="result-value" id="rFinalValue">--<span class="result-unit">mm</span></div>
+    </div>
+    <div class="result-badge">✓ OK</div>
+  </div>
+
+  <div class="error-box" id="errorBox" style="display:none;">
+    ⚠ <span id="errorMsg">Error</span>
+  </div>
+</div>
+```
+
+  </div>
+</div>
+
+<!-- History -->
+
+<div class="history-section" id="historySection" style="display:none;">
+  <div class="history-header">
+    <span class="history-title">Historial</span>
+    <button class="clear-btn" onclick="clearHistory()">Limpiar</button>
+  </div>
+  <div class="history-list" id="historyList"></div>
+</div>
+
+<script>
+  const SUBTRACT = 204 + 47.525;
+  const scanHistory = [];
+  let scanning = false;
+  let cooldown = false;
+  let lastCode = '';
+
+  document.getElementById('barcodeInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') processManual();
+  });
+
+  function startScanner() {
+    const viewport = document.getElementById('scannerViewport');
+    viewport.style.display = 'block';
+
+    Quagga.init({
+      inputStream: {
+        name: 'Live',
+        type: 'LiveStream',
+        target: viewport,
+        constraints: {
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      },
+      decoder: {
+        readers: [
+          'code_128_reader',
+          'ean_reader',
+          'ean_8_reader',
+          'code_39_reader',
+          'code_93_reader',
+          'upc_reader',
+          'upc_e_reader',
+          'i2of5_reader',
+          'codabar_reader'
+        ],
+        debug: { drawBoundingBox: false, showFrequency: false, drawScanline: false, showPattern: false }
+      },
+      locate: true
+    }, function(err) {
+      if (err) {
+        viewport.style.display = 'none';
+        setStatus('error', 'Error de cámara: ' + (err.message || err));
+        return;
+      }
+      Quagga.start();
+      scanning = true;
+      document.getElementById('startBtn').style.display = 'none';
+      document.getElementById('stopBtn').style.display  = 'flex';
+      setStatus('active', 'Cámara activa -- apunta al código de barras');
+    });
+
+    Quagga.onDetected(function(result) {
+      if (cooldown) return;
+      const code = result.codeResult.code;
+      if (!code || code === lastCode) return;
+
+      lastCode = code;
+      cooldown = true;
+      setTimeout(() => { cooldown = false; lastCode = ''; }, 2500);
+
+      processCode(code);
+    });
+  }
+
+  function stopScanner() {
+    if (!scanning) return;
+    try { Quagga.stop(); } catch(e) {}
+    scanning = false;
+    document.getElementById('scannerViewport').style.display = 'none';
+    document.getElementById('startBtn').style.display = 'flex';
+    document.getElementById('stopBtn').style.display  = 'none';
+    setStatus('', 'Cámara detenida');
+  }
+
+  function processManual() {
+    const val = document.getElementById('barcodeInput').value.trim();
+    if (!val) return;
+    processCode(val);
+    document.getElementById('barcodeInput').value = '';
+  }
+
+  function processCode(raw) {
+    const digits = raw.replace(/\D/g, '');
+
+    document.getElementById('idleMsg').style.display = 'none';
+    document.getElementById('resultContent').style.display = 'block';
+    document.getElementById('errorBox').style.display  = 'none';
+    document.getElementById('resultBox').style.display  = 'none';
+
+    if (digits.length < 5) {
+      showError(`El código "${raw}" tiene solo ${digits.length} dígito(s). Se necesitan al menos 5.`);
+      return;
+    }
+
+    const last5   = digits.slice(-5);
+    const intPart = last5.slice(0, 3);
+    const decPart = last5.slice(3, 5);
+    const value   = parseFloat(`${intPart}.${decPart}`);
+    const result  = value - SUBTRACT;
+
+    document.getElementById('rFull').textContent     = raw;
+    document.getElementById('rLast5').textContent    = last5;
+    document.getElementById('rInt').textContent      = intPart + ' mm';
+    document.getElementById('rDec').textContent      = '.' + decPart;
+    document.getElementById('fScanned').textContent  = value.toFixed(2);
+    document.getElementById('fResult').textContent   = result.toFixed(3);
+    document.getElementById('rFinalValue').innerHTML = `${result.toFixed(3)}<span class="result-unit">mm</span>`;
+
+    const box = document.getElementById('resultBox');
+    box.style.display = 'flex';
+    // Re-trigger animation
+    box.style.animation = 'none';
+    box.offsetHeight;
+    box.style.animation = '';
+
+    addHistory(raw, value, result);
+  }
+
+  function showError(msg) {
+    document.getElementById('resultBox').style.display  = 'none';
+    document.getElementById('errorBox').style.display   = 'flex';
+    document.getElementById('errorMsg').textContent     = msg;
+  }
+
+  function setStatus(type, text) {
+    const el = document.getElementById('camStatus');
+    el.className = 'cam-status ' + type;
+    document.getElementById('camStatusText').textContent = text;
+  }
+
+  function addHistory(raw, scanned, result) {
+    scanHistory.unshift({ raw, scanned, result });
+    if (scanHistory.length > 10) scanHistory.pop();
+    renderHistory();
+  }
+
+  function renderHistory() {
+    document.getElementById('historySection').style.display = 'block';
+    document.getElementById('historyList').innerHTML = scanHistory.map(item => `
+      <div class="history-item">
+        <span class="hi-code">${item.raw}</span>
+        <span class="hi-scan">${item.scanned.toFixed(2)}</span>
+        <span class="hi-res">${item.result.toFixed(3)} <small>mm</small></span>
+      </div>
+    `).join('');
+  }
+
+  function clearHistory() {
+    scanHistory.length = 0;
+    document.getElementById('historySection').style.display = 'none';
+  }
+</script>
+
+</body>
+</html>
