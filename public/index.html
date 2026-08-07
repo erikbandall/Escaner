@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mantenimiento de Tooling</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="logo-line">
+    <div class="logo-dot"></div>
+    <h1>TOOL<span>MAINT</span></h1>
+  </div>
+  <nav class="tabs" id="mainTabs">
+    <button class="tab-btn" data-tab="dashboard">Dashboard</button>
+    <button class="tab-btn" data-tab="tools">Herramientas</button>
+    <button class="tab-btn" data-tab="scan">Escanear / Medir</button>
+    <button class="tab-btn" data-tab="maintenance">Mantenimiento</button>
+    <button class="tab-btn" data-tab="history">Historial</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ============ DASHBOARD ============ -->
+  <section id="tab-dashboard" class="tab-panel">
+    <div class="section-title">Dashboard</div>
+    <div class="section-sub">Estado general del herramental de proceso</div>
+
+    <div class="stat-grid" id="statGrid"></div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">⚠ Mantenimientos vencidos</span></div>
+      <div class="card-body table-wrap">
+        <table><thead><tr><th>Herramienta</th><th>Tipo</th><th>Venció</th><th>Frecuencia</th></tr></thead>
+        <tbody id="overdueBody"></tbody></table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Próximos 7 días</span></div>
+      <div class="card-body table-wrap">
+        <table><thead><tr><th>Herramienta</th><th>Tipo</th><th>Vence</th><th>Frecuencia</th></tr></thead>
+        <tbody id="upcomingBody"></tbody></table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Mediciones recientes</span></div>
+      <div class="card-body table-wrap">
+        <table><thead><tr><th>Herramienta</th><th>Código</th><th>Valor</th><th>Resultado</th><th>Fecha</th></tr></thead>
+        <tbody id="dashMeasBody"></tbody></table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Mantenimientos recientes</span></div>
+      <div class="card-body table-wrap">
+        <table><thead><tr><th>Herramienta</th><th>Tipo</th><th>Técnico</th><th>Fecha</th></tr></thead>
+        <tbody id="dashLogBody"></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TOOLS ============ -->
+  <section id="tab-tools" class="tab-panel hidden">
+    <div class="section-title">Herramientas</div>
+    <div class="section-sub">Inventario de herramental de proceso (moldes, troqueles, calibres, plantillas...)</div>
+
+    <div class="filters-row">
+      <div class="field">
+        <label>Buscar</label>
+        <input type="text" id="toolSearch" placeholder="Código, nombre, tipo, ubicación...">
+      </div>
+      <div class="field">
+        <label>Estado</label>
+        <select id="toolStatusFilter">
+          <option value="">Todos</option>
+          <option value="activo">Activo</option>
+          <option value="en_mantenimiento">En mantenimiento</option>
+          <option value="baja">Baja</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="btnNewTool">+ Nueva herramienta</button>
+    </div>
+
+    <div class="card">
+      <div class="card-body table-wrap">
+        <table>
+          <thead><tr><th>Código</th><th>Nombre</th><th>Tipo</th><th>Ubicación</th><th>Estado</th><th>Offset</th><th></th></tr></thead>
+          <tbody id="toolsBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tool detail -->
+    <div class="card hidden" id="toolDetailCard">
+      <div class="card-header">
+        <span class="card-title" id="toolDetailTitle">Detalle</span>
+        <button class="btn btn-secondary btn-sm" id="btnCloseToolDetail">Cerrar</button>
+      </div>
+      <div class="card-body">
+        <div class="subtabs">
+          <button class="subtab-btn active" data-sub="meas">Mediciones</button>
+          <button class="subtab-btn" data-sub="sched">Programaciones</button>
+          <button class="subtab-btn" data-sub="log">Bitácora</button>
+        </div>
+        <div id="toolDetailBody"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SCAN / MEASURE ============ -->
+  <section id="tab-scan" class="tab-panel hidden">
+    <div class="section-title">Escanear / Medir</div>
+    <div class="section-sub">Escanea o ingresa el código de la herramienta para calcular la medición</div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Cámara</span></div>
+      <div class="card-body">
+        <div class="camera-btn-row">
+          <button class="btn btn-primary" id="btnStartCam">Activar cámara</button>
+          <button class="btn btn-danger hidden" id="btnStopCam">Detener</button>
+        </div>
+        <div id="scannerViewport"><div class="scan-frame"></div><div class="laser"></div></div>
+        <div class="hint-box" id="camHint">La cámara usa el lector de códigos de barras nativo del navegador (Chrome/Edge en Android). Si no está disponible, usa el ingreso manual.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Ingreso manual</span></div>
+      <div class="card-body">
+        <div class="field">
+          <label>Herramienta (opcional — vincula la medición y usa su offset de calibración)</label>
+          <select id="scanToolSelect"><option value="">— Sin vincular (offset por defecto 251.525) —</option></select>
+        </div>
+        <div class="field">
+          <label>Código escaneado</label>
+          <div class="input-row">
+            <input type="text" id="scanCodeInput" placeholder="Escribe o pega el código aquí..." autocomplete="off">
+            <button class="btn btn-secondary" id="btnScanGo">Calcular y guardar</button>
+          </div>
+        </div>
+
+        <div id="scanResult"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Últimas mediciones</span></div>
+      <div class="card-body table-wrap">
+        <table><thead><tr><th>Herramienta</th><th>Código</th><th>Valor</th><th>Resultado</th><th>Fecha</th></tr></thead>
+        <tbody id="scanRecentBody"></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MAINTENANCE ============ -->
+  <section id="tab-maintenance" class="tab-panel hidden">
+    <div class="section-title">Mantenimiento</div>
+    <div class="section-sub">Programación y bitácora de mantenimiento del herramental</div>
+
+    <div class="subtabs">
+      <button class="subtab-btn active" data-msub="schedules">Programaciones</button>
+      <button class="subtab-btn" data-msub="logs">Bitácora</button>
+    </div>
+
+    <div id="msub-schedules">
+      <div class="filters-row">
+        <div class="field">
+          <label>Filtro</label>
+          <select id="scheduleFilter">
+            <option value="">Todas activas</option>
+            <option value="overdue">Vencidas</option>
+            <option value="upcoming">Próximas 7 días</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" id="btnNewSchedule">+ Nueva programación</button>
+      </div>
+      <div class="card">
+        <div class="card-body table-wrap">
+          <table>
+            <thead><tr><th>Herramienta</th><th>Tipo</th><th>Frecuencia</th><th>Última</th><th>Próxima</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="schedulesBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="msub-logs" class="hidden">
+      <div class="filters-row">
+        <button class="btn btn-primary" id="btnNewLog">+ Registrar mantenimiento</button>
+      </div>
+      <div class="card">
+        <div class="card-body table-wrap">
+          <table>
+            <thead><tr><th>Herramienta</th><th>Tipo</th><th>Técnico</th><th>Fecha</th><th>Descripción</th><th></th></tr></thead>
+            <tbody id="logsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HISTORY ============ -->
+  <section id="tab-history" class="tab-panel hidden">
+    <div class="section-title">Historial de mediciones</div>
+    <div class="section-sub">Evolución de mediciones por herramienta a lo largo del tiempo</div>
+
+    <div class="filters-row">
+      <div class="field">
+        <label>Herramienta</label>
+        <select id="histToolFilter"><option value="">Todas</option></select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Herramienta</th><th>Código</th><th>Escaneado</th><th>Resultado</th><th></th></tr></thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">—</h3>
+      <button class="modal-close" id="modalCloseBtn">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<div id="toast" class="hidden"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
