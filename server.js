@@ -2,7 +2,6 @@ const express = require('express');
 const path = require('path');
 
 const toolsRouter = require('./routes/tools');
-const measurementsRouter = require('./routes/measurements');
 const maintenanceRouter = require('./routes/maintenance');
 const dashboardRouter = require('./routes/dashboard');
 
@@ -13,7 +12,6 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api/tools', toolsRouter);
-app.use('/api/measurements', measurementsRouter);
 app.use('/api/maintenance', maintenanceRouter);
 app.use('/api/dashboard', dashboardRouter);
 

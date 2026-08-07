@@ -19,12 +19,6 @@ async function api(method, url, body) {
   return data;
 }
 
-function el(html) {
-  const t = document.createElement('template');
-  t.innerHTML = html.trim();
-  return t.content.firstChild;
-}
-
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str)
@@ -35,11 +29,6 @@ function escapeHtml(str) {
 function fmtDate(d) {
   if (!d) return '—';
   return String(d).slice(0, 10);
-}
-
-function fmtDateTime(d) {
-  if (!d) return '—';
-  return String(d).replace('T', ' ').slice(0, 16);
 }
 
 function todayStr() {
@@ -101,13 +90,11 @@ function toolOptionsHtml(selectedId) {
 
 /* ======================== Navigation ======================== */
 
-const tabs = ['dashboard', 'tools', 'scan', 'maintenance', 'history'];
+const tabs = ['dashboard', 'tools', 'maintenance'];
 const renderers = {
   dashboard: renderDashboard,
   tools: renderTools,
-  scan: renderScan,
-  maintenance: renderMaintenance,
-  history: renderHistory
+  maintenance: renderMaintenance
 };
 
 document.getElementById('mainTabs').addEventListener('click', (e) => {
@@ -157,15 +144,6 @@ async function renderDashboard() {
       <td>${r.frequency_days} días</td>
     </tr>`).join('') : `<tr class="empty-row"><td colspan="4">Nada próximo en 7 días</td></tr>`;
 
-  document.getElementById('dashMeasBody').innerHTML = s.recent_measurements.length ? s.recent_measurements.map(m => `
-    <tr>
-      <td>${m.tool_code ? escapeHtml(m.tool_code) + ' — ' + escapeHtml(m.tool_name) : '<span class="muted">Sin vincular</span>'}</td>
-      <td class="mono">${escapeHtml(m.raw_code)}</td>
-      <td class="mono">${m.scanned_value}</td>
-      <td class="mono">${m.result_value} mm</td>
-      <td class="mono">${fmtDateTime(m.created_at)}</td>
-    </tr>`).join('') : `<tr class="empty-row"><td colspan="5">Sin mediciones aún</td></tr>`;
-
   document.getElementById('dashLogBody').innerHTML = s.recent_logs.length ? s.recent_logs.map(l => `
     <tr>
       <td>${escapeHtml(l.tool_code)} — ${escapeHtml(l.tool_name)}</td>
@@ -178,7 +156,7 @@ async function renderDashboard() {
 /* ======================== TOOLS ======================== */
 
 let currentToolDetailId = null;
-let toolDetailSub = 'meas';
+let toolDetailSub = 'sched';
 
 async function renderTools() {
   await loadToolsTable();
@@ -201,13 +179,12 @@ async function loadToolsTable() {
       <td>${escapeHtml(t.type || '—')}</td>
       <td>${escapeHtml(t.location || '—')}</td>
       <td>${statusBadge(t.status)}</td>
-      <td class="mono">${t.calibration_offset}</td>
       <td class="row-actions">
         <button class="btn btn-secondary btn-sm" data-action="view" data-id="${t.id}">Ver</button>
         <button class="btn btn-secondary btn-sm" data-action="edit" data-id="${t.id}">Editar</button>
         <button class="btn btn-danger btn-sm" data-action="delete" data-id="${t.id}">Eliminar</button>
       </td>
-    </tr>`).join('') : `<tr class="empty-row"><td colspan="7">Sin herramientas. Crea la primera con "+ Nueva herramienta".</td></tr>`;
+    </tr>`).join('') : `<tr class="empty-row"><td colspan="6">Sin herramientas. Crea la primera con "+ Nueva herramienta".</td></tr>`;
 }
 
 document.getElementById('toolSearch').addEventListener('input', debounce(loadToolsTable, 250));
@@ -239,23 +216,20 @@ function openToolForm(tool) {
   openModal(isEdit ? 'Editar herramienta' : 'Nueva herramienta', `
     <form id="toolForm">
       <div class="field-row">
-        <div class="field"><label>Código (barcode)</label><input name="code" required value="${escapeHtml(tool?.code || '')}"></div>
+        <div class="field"><label>Código</label><input name="code" required value="${escapeHtml(tool?.code || '')}"></div>
         <div class="field"><label>Nombre</label><input name="name" required value="${escapeHtml(tool?.name || '')}"></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Tipo</label><input name="type" placeholder="Troquel, molde, calibre..." value="${escapeHtml(tool?.type || '')}"></div>
         <div class="field"><label>Ubicación</label><input name="location" value="${escapeHtml(tool?.location || '')}"></div>
       </div>
-      <div class="field-row">
-        <div class="field">
-          <label>Estado</label>
-          <select name="status">
-            <option value="activo" ${tool?.status === 'activo' ? 'selected' : ''}>Activo</option>
-            <option value="en_mantenimiento" ${tool?.status === 'en_mantenimiento' ? 'selected' : ''}>En mantenimiento</option>
-            <option value="baja" ${tool?.status === 'baja' ? 'selected' : ''}>Baja</option>
-          </select>
-        </div>
-        <div class="field"><label>Offset de calibración (mm)</label><input name="calibration_offset" type="number" step="0.001" value="${tool ? tool.calibration_offset : 251.525}"></div>
+      <div class="field">
+        <label>Estado</label>
+        <select name="status">
+          <option value="activo" ${tool?.status === 'activo' ? 'selected' : ''}>Activo</option>
+          <option value="en_mantenimiento" ${tool?.status === 'en_mantenimiento' ? 'selected' : ''}>En mantenimiento</option>
+          <option value="baja" ${tool?.status === 'baja' ? 'selected' : ''}>Baja</option>
+        </select>
       </div>
       <div class="field"><label>Notas</label><textarea name="notes">${escapeHtml(tool?.notes || '')}</textarea></div>
       <div class="form-actions">
@@ -281,11 +255,11 @@ function openToolForm(tool) {
 
 async function openToolDetail(id) {
   currentToolDetailId = id;
-  toolDetailSub = 'meas';
+  toolDetailSub = 'sched';
   const tool = await api('GET', `/api/tools/${id}`);
   document.getElementById('toolDetailTitle').textContent = `${tool.code} — ${tool.name}`;
   document.getElementById('toolDetailCard').classList.remove('hidden');
-  document.querySelectorAll('#toolDetailCard .subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.sub === 'meas'));
+  document.querySelectorAll('#toolDetailCard .subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.sub === 'sched'));
   await renderToolDetailBody();
   document.getElementById('toolDetailCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -306,12 +280,7 @@ document.querySelectorAll('#toolDetailCard .subtab-btn').forEach(btn => {
 async function renderToolDetailBody() {
   const id = currentToolDetailId;
   const body = document.getElementById('toolDetailBody');
-  if (toolDetailSub === 'meas') {
-    const rows = await api('GET', `/api/tools/${id}/measurements`);
-    body.innerHTML = rows.length ? `<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Código</th><th>Escaneado</th><th>Resultado</th></tr></thead><tbody>${
-      rows.map(m => `<tr><td class="mono">${fmtDateTime(m.created_at)}</td><td class="mono">${escapeHtml(m.raw_code)}</td><td class="mono">${m.scanned_value}</td><td class="mono">${m.result_value} mm</td></tr>`).join('')
-    }</tbody></table></div>` : `<p class="muted">Sin mediciones registradas para esta herramienta.</p>`;
-  } else if (toolDetailSub === 'sched') {
+  if (toolDetailSub === 'sched') {
     const rows = await api('GET', `/api/tools/${id}/schedules`);
     body.innerHTML = rows.length ? `<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Frecuencia</th><th>Última</th><th>Próxima</th><th>Estado</th></tr></thead><tbody>${
       rows.map(s => `<tr><td>${escapeHtml(s.maintenance_type)}</td><td>${s.frequency_days} días</td><td class="mono">${fmtDate(s.last_done_date)}</td><td class="mono">${fmtDate(s.next_due_date)}</td><td>${s.active ? dueBadge(s.next_due_date) : '<span class="badge">Inactiva</span>'}</td></tr>`).join('')
@@ -322,144 +291,6 @@ async function renderToolDetailBody() {
       rows.map(l => `<tr><td class="mono">${fmtDate(l.performed_date)}</td><td>${escapeHtml(l.maintenance_type)}</td><td>${escapeHtml(l.technician || '—')}</td><td>${escapeHtml(l.description || '—')}</td></tr>`).join('')
     }</tbody></table></div>` : `<p class="muted">Sin mantenimientos registrados para esta herramienta.</p>`;
   }
-}
-
-/* ======================== SCAN / MEASURE ======================== */
-
-async function renderScan() {
-  await refreshToolsCache();
-  const sel = document.getElementById('scanToolSelect');
-  sel.innerHTML = '<option value="">— Sin vincular (offset por defecto 251.525) —</option>' + toolOptionsHtml();
-  await loadScanRecent();
-  setupCameraHint();
-}
-
-async function loadScanRecent() {
-  const rows = await api('GET', '/api/measurements?limit=10');
-  document.getElementById('scanRecentBody').innerHTML = rows.length ? rows.map(m => `
-    <tr>
-      <td>${m.tool_code ? escapeHtml(m.tool_code) + ' — ' + escapeHtml(m.tool_name) : '<span class="muted">Sin vincular</span>'}</td>
-      <td class="mono">${escapeHtml(m.raw_code)}</td>
-      <td class="mono">${m.scanned_value}</td>
-      <td class="mono">${m.result_value} mm</td>
-      <td class="mono">${fmtDateTime(m.created_at)}</td>
-    </tr>`).join('') : `<tr class="empty-row"><td colspan="5">Sin mediciones aún</td></tr>`;
-}
-
-document.getElementById('scanCodeInput').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') { e.preventDefault(); processScan(); }
-});
-document.getElementById('btnScanGo').addEventListener('click', processScan);
-
-async function processScan() {
-  const raw = document.getElementById('scanCodeInput').value.trim();
-  const toolId = document.getElementById('scanToolSelect').value;
-  const resultDiv = document.getElementById('scanResult');
-  if (!raw) return;
-
-  try {
-    const payload = { raw_code: raw };
-    if (toolId) payload.tool_id = toolId;
-    const m = await api('POST', '/api/measurements', payload);
-
-    resultDiv.innerHTML = `
-      <div class="breakdown-grid">
-        <div class="breakdown-item"><div class="bi-label">Código completo</div><div class="bi-value">${escapeHtml(m.raw_code)}</div></div>
-        <div class="breakdown-item"><div class="bi-label">Últimos 5 dígitos</div><div class="bi-value">${escapeHtml(m.breakdown.last5)}</div></div>
-        <div class="breakdown-item hl"><div class="bi-label">Entero · mm</div><div class="bi-value">${escapeHtml(m.breakdown.intPart)} mm</div></div>
-        <div class="breakdown-item hl"><div class="bi-label">Decimal</div><div class="bi-value">.${escapeHtml(m.breakdown.decPart)}</div></div>
-      </div>
-      <div class="result-box">
-        <div>
-          <div class="bi-label">Resultado (offset ${m.offset_used})</div>
-          <div class="result-value">${m.result_value}<span class="result-unit">mm</span></div>
-        </div>
-        <div class="result-badge">${m.matched_tool ? '✓ Vinculado' : 'Sin vincular'}</div>
-      </div>
-    `;
-    document.getElementById('scanCodeInput').value = '';
-    toast('Medición guardada');
-    await loadScanRecent();
-  } catch (err) {
-    resultDiv.innerHTML = `<div class="error-box">⚠ ${escapeHtml(err.message)}</div>`;
-  }
-}
-
-/* --- Camera scanning via native BarcodeDetector API (no external deps) --- */
-let scanStream = null;
-let scanRAF = null;
-
-function setupCameraHint() {
-  const hint = document.getElementById('camHint');
-  if (!('BarcodeDetector' in window)) {
-    hint.textContent = 'Este navegador no soporta el lector de códigos de barras nativo. Usa el ingreso manual.';
-    document.getElementById('btnStartCam').disabled = true;
-  } else {
-    hint.textContent = 'Cámara lista. Apunta al código de barras de la herramienta.';
-    document.getElementById('btnStartCam').disabled = false;
-  }
-}
-
-document.getElementById('btnStartCam').addEventListener('click', startCamera);
-document.getElementById('btnStopCam').addEventListener('click', stopCamera);
-
-async function startCamera() {
-  if (!('BarcodeDetector' in window)) return;
-  const viewport = document.getElementById('scannerViewport');
-  const video = document.createElement('video');
-  video.autoplay = true;
-  video.playsInline = true;
-  viewport.innerHTML = '';
-  viewport.appendChild(video);
-  const frame = el('<div class="scan-frame"></div>');
-  const laser = el('<div class="laser"></div>');
-  viewport.appendChild(frame);
-  viewport.appendChild(laser);
-  viewport.style.display = 'block';
-
-  try {
-    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-  } catch (err) {
-    toast('No se pudo acceder a la cámara: ' + err.message, true);
-    viewport.style.display = 'none';
-    return;
-  }
-  video.srcObject = scanStream;
-  document.getElementById('btnStartCam').classList.add('hidden');
-  document.getElementById('btnStopCam').classList.remove('hidden');
-
-  const detector = new BarcodeDetector();
-  let lastCode = '';
-  let cooldownUntil = 0;
-
-  async function tick() {
-    if (!scanStream) return;
-    const now = Date.now();
-    if (now > cooldownUntil && video.readyState >= 2) {
-      try {
-        const codes = await detector.detect(video);
-        if (codes.length) {
-          const code = codes[0].rawValue;
-          if (code && code !== lastCode) {
-            lastCode = code;
-            cooldownUntil = now + 2000;
-            document.getElementById('scanCodeInput').value = code;
-            processScan();
-          }
-        }
-      } catch (e) { /* ignore transient detector errors */ }
-    }
-    scanRAF = requestAnimationFrame(tick);
-  }
-  scanRAF = requestAnimationFrame(tick);
-}
-
-function stopCamera() {
-  if (scanRAF) cancelAnimationFrame(scanRAF);
-  if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
-  document.getElementById('scannerViewport').style.display = 'none';
-  document.getElementById('btnStartCam').classList.remove('hidden');
-  document.getElementById('btnStopCam').classList.add('hidden');
 }
 
 /* ======================== MAINTENANCE ======================== */
@@ -644,43 +475,6 @@ async function openLogForm() {
     } catch (err) { toast(err.message, true); }
   });
 }
-
-/* ======================== HISTORY ======================== */
-
-async function renderHistory() {
-  await refreshToolsCache();
-  const sel = document.getElementById('histToolFilter');
-  sel.innerHTML = '<option value="">Todas</option>' + toolOptionsHtml();
-  await loadHistory();
-}
-
-document.getElementById('histToolFilter').addEventListener('change', loadHistory);
-
-async function loadHistory() {
-  const toolId = document.getElementById('histToolFilter').value;
-  const params = new URLSearchParams();
-  if (toolId) params.set('tool_id', toolId);
-  const rows = await api('GET', '/api/measurements?' + params.toString());
-
-  document.getElementById('historyBody').innerHTML = rows.length ? rows.map(m => `
-    <tr>
-      <td class="mono">${fmtDateTime(m.created_at)}</td>
-      <td>${m.tool_code ? escapeHtml(m.tool_code) + ' — ' + escapeHtml(m.tool_name) : '<span class="muted">Sin vincular</span>'}</td>
-      <td class="mono">${escapeHtml(m.raw_code)}</td>
-      <td class="mono">${m.scanned_value}</td>
-      <td class="mono">${m.result_value} mm</td>
-      <td class="row-actions"><button class="btn btn-danger btn-sm" data-action="delete-meas" data-id="${m.id}">Eliminar</button></td>
-    </tr>`).join('') : `<tr class="empty-row"><td colspan="6">Sin mediciones para este filtro.</td></tr>`;
-}
-
-document.getElementById('historyBody').addEventListener('click', async (e) => {
-  const btn = e.target.closest('button[data-action="delete-meas"]');
-  if (!btn) return;
-  if (!confirm('¿Eliminar esta medición?')) return;
-  await api('DELETE', `/api/measurements/${btn.dataset.id}`);
-  toast('Medición eliminada');
-  await loadHistory();
-});
 
 /* ======================== Utils ======================== */
 

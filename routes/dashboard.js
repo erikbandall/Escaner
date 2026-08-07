@@ -36,16 +36,10 @@ router.get('/summary', (req, res) => {
     ORDER BY s.next_due_date
   `).all(today(), horizon);
 
-  const recentMeasurements = db.prepare(`
-    SELECT m.*, t.code AS tool_code, t.name AS tool_name
-    FROM measurements m LEFT JOIN tools t ON t.id = m.tool_id
-    ORDER BY m.created_at DESC LIMIT 8
-  `).all();
-
   const recentLogs = db.prepare(`
     SELECT l.*, t.code AS tool_code, t.name AS tool_name
     FROM maintenance_logs l JOIN tools t ON t.id = l.tool_id
-    ORDER BY l.performed_date DESC, l.id DESC LIMIT 8
+    ORDER BY l.performed_date DESC, l.id DESC LIMIT 10
   `).all();
 
   res.json({
@@ -55,7 +49,6 @@ router.get('/summary', (req, res) => {
     upcoming_count: upcoming.length,
     overdue,
     upcoming,
-    recent_measurements: recentMeasurements,
     recent_logs: recentLogs
   });
 });

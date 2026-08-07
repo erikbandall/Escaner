@@ -1,29 +1,20 @@
 # Mantenimiento de Tooling de Proceso
 
 Aplicación web para gestionar el mantenimiento del herramental de proceso
-(moldes, troqueles, calibres, plantillas, etc.): inventario, mediciones por
-código de barras, programación de mantenimiento preventivo y bitácora de
-intervenciones realizadas.
+(moldes, troqueles, calibres, plantillas, etc.): inventario, programación de
+mantenimiento preventivo y bitácora de intervenciones realizadas.
 
 ## Funcionalidad
 
 - **Dashboard**: resumen del estado del herramental, mantenimientos vencidos
-  y próximos (7 días), mediciones y mantenimientos recientes.
-- **Herramientas**: inventario con código, nombre, tipo, ubicación, estado
-  (activo / en mantenimiento / baja) y offset de calibración. Cada
-  herramienta tiene una vista de detalle con su historial de mediciones,
-  programaciones y bitácora.
-- **Escanear / Medir**: calcula una medición a partir de un código de barras
-  (los últimos 5 dígitos se interpretan como entero.decimal en mm, menos un
-  offset de calibración configurable por herramienta). Soporta cámara vía
-  la API nativa `BarcodeDetector` del navegador (Chrome/Edge en Android) o
-  ingreso manual.
+  y próximos (7 días), y mantenimientos recientes.
+- **Herramientas**: inventario con código, nombre, tipo, ubicación y estado
+  (activo / en mantenimiento / baja). Cada herramienta tiene una vista de
+  detalle con sus programaciones y bitácora.
 - **Mantenimiento**: programaciones recurrentes (tipo, frecuencia en días,
   próxima fecha) y bitácora de mantenimientos realizados. Registrar un
   mantenimiento contra una programación actualiza automáticamente su
   próxima fecha de vencimiento.
-- **Historial**: todas las mediciones, filtrables por herramienta, para ver
-  la evolución/desgaste a lo largo del tiempo.
 
 ## Stack
 
@@ -54,7 +45,6 @@ npm run dev
 server.js              Punto de entrada Express
 db/database.js         Conexión SQLite + esquema
 routes/tools.js         API de herramientas (inventario)
-routes/measurements.js  API de mediciones (cálculo por código de barras)
 routes/maintenance.js   API de programaciones y bitácora de mantenimiento
 routes/dashboard.js     API de resumen para el dashboard
 public/                 Frontend (index.html, css/, js/)
@@ -66,10 +56,8 @@ public/                 Frontend (index.html, css/, js/)
 |---|---|---|
 | GET/POST | `/api/tools` | Listar / crear herramientas |
 | GET/PUT/DELETE | `/api/tools/:id` | Detalle / editar / eliminar herramienta |
-| GET | `/api/tools/lookup/:code` | Buscar herramienta por código de barras |
-| GET | `/api/tools/:id/measurements` \| `/schedules` \| `/logs` | Historial de una herramienta |
-| GET/POST | `/api/measurements` | Historial / registrar medición |
-| POST | `/api/measurements/preview` | Calcular sin guardar |
+| GET | `/api/tools/lookup/:code` | Buscar herramienta por código |
+| GET | `/api/tools/:id/schedules` \| `/logs` | Programaciones / bitácora de una herramienta |
 | GET/POST | `/api/maintenance/schedules` | Programaciones de mantenimiento |
 | PUT/DELETE | `/api/maintenance/schedules/:id` | Editar / eliminar programación |
 | GET/POST | `/api/maintenance/logs` | Bitácora de mantenimiento |
@@ -77,8 +65,5 @@ public/                 Frontend (index.html, css/, js/)
 
 ## Notas
 
-- El offset de calibración por defecto es `251.525` (204 + 47.525),
-  heredado del cálculo original del escáner. Es configurable por
-  herramienta en el formulario de inventario.
 - La base de datos SQLite es de archivo único; para uso multiusuario en red
   basta con correr el servidor en una máquina accesible por la red local.

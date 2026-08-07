@@ -22,20 +22,9 @@ db.exec(`
     type TEXT,
     location TEXT,
     status TEXT NOT NULL DEFAULT 'activo' CHECK (status IN ('activo','en_mantenimiento','baja')),
-    calibration_offset REAL NOT NULL DEFAULT 251.525,
     notes TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS measurements (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    tool_id INTEGER REFERENCES tools(id) ON DELETE SET NULL,
-    raw_code TEXT NOT NULL,
-    scanned_value REAL,
-    result_value REAL,
-    unit TEXT NOT NULL DEFAULT 'mm',
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
   CREATE TABLE IF NOT EXISTS maintenance_schedules (
@@ -62,7 +51,6 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
-  CREATE INDEX IF NOT EXISTS idx_measurements_tool ON measurements(tool_id);
   CREATE INDEX IF NOT EXISTS idx_schedules_tool ON maintenance_schedules(tool_id);
   CREATE INDEX IF NOT EXISTS idx_schedules_due ON maintenance_schedules(next_due_date);
   CREATE INDEX IF NOT EXISTS idx_logs_tool ON maintenance_logs(tool_id);
