@@ -62,6 +62,7 @@ routes/maintenance.js        API de programaciones (+ checklist) y bitácora
 routes/notifications.js      API de notificaciones (generación + lectura)
 routes/dashboard.js          API de resumen y desglose por línea
 public/                      Frontend (index.html, css/, js/)
+demo/preview.html            Vista previa autocontenida sin backend (ver demo/README.md)
 ```
 
 ## API (resumen)

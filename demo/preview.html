@@ -1,0 +1,2386 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mantenimiento de Tooling</title>
+<meta name="description" content="Mantenimiento preventivo avanzado: maquinas, herramientas, procesos, tecnicos, lineas de ensamble, checklist y notificaciones. Datos guardados en el navegador (localStorage).">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E%F0%9F%94%A7%3C/text%3E%3C/svg%3E">
+<style>
+:root {
+  --font-sans: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
+  /* Surfaces */
+  --bg: #eef1f6;
+  --surface: #ffffff;
+  --surface-2: #f5f7fa;
+  --border: #dce2eb;
+  --text: #1e293b;
+  --muted: #64748b;
+
+  /* Brand */
+  --brand-navy: #0b2a4a;
+  --brand-navy-2: #123a63;
+  --brand-blue: #1d5ea8;
+  --brand-blue-hover: #1a5495;
+  --accent-teal: #0e8fa3;
+
+  /* Semantic (kept distinct from the brand accent) */
+  --success: #157f3c;
+  --success-bg: #e5f5ea;
+  --warning: #b5650a;
+  --warning-bg: #fbf0e0;
+  --critical: #b42318;
+  --critical-bg: #fbe7e5;
+  --neutral-bg: #eef1f6;
+
+  --radius: 8px;
+  --radius-sm: 6px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgba(16, 30, 54, 0.06), 0 1px 1px rgba(16, 30, 54, 0.04);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1220;
+    --surface: #111a2c;
+    --surface-2: #0e1728;
+    --border: #23304a;
+    --text: #e4e9f2;
+    --muted: #90a0bc;
+
+    --brand-navy: #0d1a2e;
+    --brand-navy-2: #16233b;
+    --brand-blue: #4c8dd9;
+    --brand-blue-hover: #6aa2e2;
+    --accent-teal: #35c2d6;
+
+    --success: #3fbe72;
+    --success-bg: rgba(63, 190, 114, 0.14);
+    --warning: #e2a93b;
+    --warning-bg: rgba(226, 169, 59, 0.14);
+    --critical: #f0685f;
+    --critical-bg: rgba(240, 104, 95, 0.14);
+    --neutral-bg: rgba(255, 255, 255, 0.06);
+
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b1220;
+  --surface: #111a2c;
+  --surface-2: #0e1728;
+  --border: #23304a;
+  --text: #e4e9f2;
+  --muted: #90a0bc;
+
+  --brand-navy: #0d1a2e;
+  --brand-navy-2: #16233b;
+  --brand-blue: #4c8dd9;
+  --brand-blue-hover: #6aa2e2;
+  --accent-teal: #35c2d6;
+
+  --success: #3fbe72;
+  --success-bg: rgba(63, 190, 114, 0.14);
+  --warning: #e2a93b;
+  --warning-bg: rgba(226, 169, 59, 0.14);
+  --critical: #f0685f;
+  --critical-bg: rgba(240, 104, 95, 0.14);
+  --neutral-bg: rgba(255, 255, 255, 0.06);
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14.5px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.hidden { display: none !important; }
+a { color: var(--accent-teal); }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+
+:focus-visible {
+  outline: 2px solid var(--brand-blue);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+
+/* ================= App shell ================= */
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ---- Sidebar ---- */
+.sidebar {
+  width: 232px;
+  flex-shrink: 0;
+  background: var(--brand-navy);
+  color: #cfe0f2;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.sidebar-brand .mark {
+  width: 30px; height: 30px; flex-shrink: 0;
+  border-radius: 7px;
+  background: var(--brand-blue);
+  display: flex; align-items: center; justify-content: center;
+}
+.sidebar-brand .mark svg { width: 17px; height: 17px; stroke: #fff; }
+.sidebar-brand .name { font-size: 0.98rem; font-weight: 700; letter-spacing: 0.01em; color: #fff; line-height: 1.15; }
+.sidebar-brand .tagline { font-size: 0.66rem; color: #7fa0c2; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 1px; }
+
+.sidebar-nav {
+  flex: 1;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: transparent;
+  border: none;
+  color: #a9c1dc;
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  font-weight: 500;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.nav-item svg { width: 17px; height: 17px; flex-shrink: 0; stroke: currentColor; fill: none; }
+.nav-item:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+.nav-item.active { background: var(--brand-blue); color: #fff; }
+
+.sidebar-footer {
+  padding: 14px 20px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.68rem;
+  color: #6f8db1;
+  letter-spacing: 0.03em;
+}
+
+/* ---- Main area ---- */
+.app-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 28px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.topbar h2 { font-size: 1.15rem; font-weight: 700; color: var(--text); }
+.topbar .sub { font-size: 0.78rem; color: var(--muted); }
+
+main.content { padding: 24px 28px 60px; max-width: 1180px; }
+
+/* Mobile top nav (shown instead of sidebar under the breakpoint) */
+.mobile-tabs { display: none; }
+
+@media (max-width: 860px) {
+  .sidebar { display: none; }
+  .mobile-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--brand-navy);
+    padding: 8px 10px;
+    overflow-x: auto;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  .mobile-tabs .nav-item { flex-direction: column; gap: 3px; padding: 7px 12px; white-space: nowrap; font-size: 0.68rem; }
+  .mobile-tabs .nav-item svg { width: 18px; height: 18px; }
+  .topbar { padding: 14px 16px; }
+  main.content { padding: 18px 16px 48px; }
+}
+
+/* ================= Cards ================= */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+.card-header {
+  border-bottom: 1px solid var(--border);
+  padding: 13px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.card-title { font-size: 0.86rem; font-weight: 700; color: var(--text); }
+.card-body { padding: 16px 18px; }
+
+.section-title { font-size: 1.3rem; font-weight: 700; color: var(--text); margin-bottom: 2px; text-wrap: balance; }
+.section-sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 20px; }
+
+/* ---------- KPI tiles ---------- */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.stat-tile {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow-card); padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.stat-tile .icon {
+  width: 36px; height: 36px; border-radius: var(--radius-sm); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--neutral-bg); color: var(--brand-blue);
+}
+.stat-tile .icon svg { width: 18px; height: 18px; stroke: currentColor; fill: none; }
+.stat-tile .n { font-family: var(--font-mono); font-size: 1.5rem; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.stat-tile .l { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-top: 2px; }
+.stat-tile.warn .icon { background: var(--warning-bg); color: var(--warning); }
+.stat-tile.bad .icon { background: var(--critical-bg); color: var(--critical); }
+.stat-tile.good .icon { background: var(--success-bg); color: var(--success); }
+
+/* ================= Buttons ================= */
+.btn {
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 9px 15px;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-primary { background: var(--brand-blue); color: #fff; }
+.btn-primary:hover { background: var(--brand-blue-hover); }
+.btn-danger { background: var(--critical); color: #fff; }
+.btn-danger:hover { filter: brightness(1.08); }
+.btn-secondary { background: var(--surface); border-color: var(--border); color: var(--text); }
+.btn-secondary:hover { border-color: var(--brand-blue); color: var(--brand-blue); }
+.btn-sm { padding: 5px 10px; font-size: 0.72rem; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ================= Forms ================= */
+label { display: block; font-size: 0.72rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
+input, select, textarea {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 11px;
+  font-size: 0.86rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+textarea { resize: vertical; min-height: 60px; }
+input:focus, select:focus, textarea:focus { border-color: var(--brand-blue); box-shadow: 0 0 0 3px rgba(29, 94, 168, 0.15); }
+.field { margin-bottom: 14px; }
+.field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.form-actions { display: flex; gap: 10px; margin-top: 6px; justify-content: flex-end; }
+
+/* ================= Tables ================= */
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+thead th {
+  text-align: left; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--muted); border-bottom: 1px solid var(--border); padding: 9px 12px; background: var(--surface-2);
+}
+tbody td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--surface-2); }
+.table-wrap { overflow-x: auto; }
+.empty-row td { text-align: center; color: var(--muted); padding: 26px; }
+
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+
+/* ================= Badges / status pills ================= */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: var(--radius-pill);
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.02em;
+}
+.badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.badge-activo { background: var(--success-bg); color: var(--success); }
+.badge-en_mantenimiento { background: var(--warning-bg); color: var(--warning); }
+.badge-baja { background: var(--critical-bg); color: var(--critical); }
+.badge-overdue { background: var(--critical-bg); color: var(--critical); }
+.badge-upcoming { background: var(--warning-bg); color: var(--warning); }
+.badge-ok { background: var(--success-bg); color: var(--success); }
+
+.row-actions { display: flex; gap: 6px; }
+
+/* ================= Modal ================= */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(11, 26, 46, 0.55); display: flex;
+  align-items: flex-start; justify-content: center; padding: 48px 16px; z-index: 100; overflow-y: auto;
+}
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); width: 100%; max-width: 520px; box-shadow: 0 12px 40px rgba(11, 26, 46, 0.25); }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid var(--border); }
+.modal-header h3 { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+.modal-close { background: none; border: none; color: var(--muted); font-size: 1.3rem; cursor: pointer; line-height: 1; }
+.modal-close:hover { color: var(--critical); }
+.modal-body { padding: 18px 20px; }
+
+/* ================= Toast ================= */
+#toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--brand-navy); border: 1px solid var(--brand-navy-2); color: #fff;
+  padding: 10px 18px; border-radius: var(--radius-sm); font-size: 0.85rem; z-index: 200;
+  box-shadow: 0 6px 20px rgba(11, 26, 46, 0.35); transition: opacity 0.2s, transform 0.2s;
+  max-width: calc(100vw - 32px);
+}
+#toast.error { background: var(--critical); border-color: var(--critical); }
+#toast.hidden { opacity: 0; pointer-events: none; transform: translate(-50%, 10px); }
+
+.filters-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; align-items: flex-end; }
+.filters-row .field { margin-bottom: 0; min-width: 160px; flex: 1; }
+
+.subtabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.subtab-btn {
+  background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+  font-family: var(--font-sans); font-size: 0.78rem; font-weight: 600;
+  padding: 7px 13px; border-radius: var(--radius-sm); cursor: pointer;
+}
+.subtab-btn.active { color: var(--brand-blue); border-color: var(--brand-blue); background: var(--neutral-bg); }
+
+@media (max-width: 480px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ================= Icon button / notifications ================= */
+.icon-btn {
+  position: relative;
+  background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+  width: 38px; height: 38px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.icon-btn:hover { color: var(--brand-blue); border-color: var(--brand-blue); }
+.icon-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; }
+
+.notif-wrap { position: relative; }
+.notif-badge {
+  position: absolute; top: -5px; right: -5px;
+  background: var(--critical); color: #fff; font-size: 0.62rem; font-weight: 700;
+  min-width: 16px; height: 16px; border-radius: var(--radius-pill);
+  display: flex; align-items: center; justify-content: center; padding: 0 3px;
+  border: 2px solid var(--surface);
+}
+.notif-panel {
+  position: absolute; top: calc(100% + 8px); right: 0; width: 340px; max-width: calc(100vw - 32px);
+  max-height: 420px; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(11, 26, 46, 0.2); z-index: 50;
+}
+.notif-panel-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 0.82rem; font-weight: 700;
+  position: sticky; top: 0; background: var(--surface);
+}
+.notif-item {
+  display: flex; align-items: flex-start; gap: 9px; padding: 10px 14px;
+  border-bottom: 1px solid var(--border); font-size: 0.8rem; cursor: pointer;
+}
+.notif-item:last-child { border-bottom: none; }
+.notif-item:hover { background: var(--surface-2); }
+.notif-item .dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+.notif-item.type-overdue .dot { background: var(--critical); }
+.notif-item.type-upcoming .dot { background: var(--warning); }
+.notif-item .msg { flex: 1; color: var(--text); }
+.notif-item .when { color: var(--muted); font-size: 0.7rem; margin-top: 2px; }
+.notif-empty { padding: 24px; text-align: center; color: var(--muted); font-size: 0.82rem; }
+
+/* ================= Checklist builder ================= */
+.checklist-builder { display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; }
+.checklist-row { display: flex; gap: 8px; align-items: center; }
+.checklist-row input[type="text"] { flex: 1; }
+.checklist-row .btn { flex-shrink: 0; }
+
+.checklist-run { display: flex; flex-direction: column; gap: 10px; margin-bottom: 6px; }
+.checklist-run-item { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; background: var(--surface-2); }
+.checklist-run-item label.chk { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; color: var(--text); text-transform: none; letter-spacing: 0; margin-bottom: 6px; }
+.checklist-run-item input[type="checkbox"] { width: auto; accent-color: var(--brand-blue); }
+.checklist-run-item input[type="text"] { font-size: 0.8rem; }
+
+input[type="checkbox"] { accent-color: var(--brand-blue); }
+
+/* ================= Line status chart ================= */
+.line-chart-row { display: grid; grid-template-columns: 140px 1fr 90px; gap: 12px; align-items: center; padding: 7px 0; }
+.line-chart-row .line-name { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+.line-bar { display: flex; height: 12px; border-radius: var(--radius-pill); overflow: hidden; background: var(--surface-2); border: 1px solid var(--border); }
+.line-bar .seg-overdue { background: var(--critical); }
+.line-bar .seg-upcoming { background: var(--warning); }
+.line-bar .seg-ok { background: var(--success); }
+.line-chart-row .line-total { font-size: 0.74rem; color: var(--muted); text-align: right; }
+.line-chart-legend { display: flex; gap: 16px; margin-top: 12px; font-size: 0.72rem; color: var(--muted); flex-wrap: wrap; }
+.line-chart-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.line-chart-legend .sw { width: 9px; height: 9px; border-radius: 2px; }
+.line-chart-empty { color: var(--muted); font-size: 0.82rem; padding: 8px 0; }
+
+/* ================= Detail meta / misc ================= */
+.detail-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.detail-meta .chip {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-pill);
+  padding: 4px 12px; font-size: 0.74rem; color: var(--muted);
+}
+.detail-meta .chip strong { color: var(--text); font-weight: 600; }
+
+/* ---------- Demo banner (solo en la vista previa, no existe en public/) ---------- */
+.demo-banner {
+  background: var(--warning-bg);
+  border-bottom: 1px solid var(--warning);
+  color: var(--warning);
+  font-size: 0.78rem;
+  padding: 9px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  text-align: center;
+}
+.demo-banner button {
+  background: var(--surface); border: 1px solid var(--warning); color: var(--warning);
+  font-family: var(--font-sans); font-size: 0.72rem; font-weight: 700;
+  padding: 4px 11px; border-radius: var(--radius-sm); cursor: pointer;
+}
+.demo-banner button:hover { background: var(--warning-bg); }
+</style>
+</head>
+<body>
+
+<div class="demo-banner">
+  Vista previa local — tus datos se guardan solo en este navegador, no en un servidor.
+  <button id="btnResetDemo" type="button">Reiniciar demo</button>
+</div>
+
+<div class="app-shell">
+
+  <!-- ============ SIDEBAR (desktop) ============ -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+      </div>
+      <div>
+        <div class="name">TOOLMAINT</div>
+        <div class="tagline">Gestión de herramental</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav" id="mainTabs">
+      <button class="nav-item active" data-tab="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" data-tab="tools">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+        Herramientas
+      </button>
+      <button class="nav-item" data-tab="maintenance">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+        Mantenimiento
+      </button>
+      <button class="nav-item" data-tab="config">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>
+        Configuración
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">TOOLMAINT · Vista previa</div>
+  </aside>
+
+  <div class="app-main">
+
+    <!-- ============ TOP NAV (mobile) ============ -->
+    <nav class="mobile-tabs" id="mobileTabs">
+      <button class="nav-item active" data-tab="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" data-tab="tools">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+        Herramientas
+      </button>
+      <button class="nav-item" data-tab="maintenance">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+        Mantenimiento
+      </button>
+      <button class="nav-item" data-tab="config">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>
+        Config.
+      </button>
+    </nav>
+
+    <header class="topbar">
+      <div>
+        <h2 id="pageTitle">Dashboard</h2>
+        <div class="sub" id="pageSub">Estado general del herramental de proceso</div>
+      </div>
+      <div class="notif-wrap">
+        <button class="icon-btn" id="btnNotifBell" aria-label="Notificaciones" aria-haspopup="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          <span class="notif-badge hidden" id="notifBadge">0</span>
+        </button>
+        <div class="notif-panel hidden" id="notifPanel">
+          <div class="notif-panel-header">
+            <span>Notificaciones</span>
+            <button class="btn btn-secondary btn-sm" id="btnMarkAllRead">Marcar todas leídas</button>
+          </div>
+          <div id="notifList"></div>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <!-- ============ DASHBOARD ============ -->
+      <section id="tab-dashboard" class="tab-panel">
+        <div class="filters-row">
+          <div class="field">
+            <label>Línea de ensamble</label>
+            <select id="dashLineFilter"><option value="">Todas</option></select>
+          </div>
+          <div class="field">
+            <label>Técnico</label>
+            <select id="dashTechFilter"><option value="">Todos</option></select>
+          </div>
+        </div>
+
+        <div class="stat-grid" id="statGrid"></div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">Estado de mantenimiento por línea</span></div>
+          <div class="card-body">
+            <div id="lineChart"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">Mantenimientos vencidos</span></div>
+          <div class="card-body table-wrap">
+            <table><thead><tr><th>Herramienta</th><th>Tipo</th><th>Línea</th><th>Técnico</th><th>Venció</th></tr></thead>
+            <tbody id="overdueBody"></tbody></table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">Próximos a vencer</span></div>
+          <div class="card-body table-wrap">
+            <table><thead><tr><th>Herramienta</th><th>Tipo</th><th>Línea</th><th>Técnico</th><th>Vence</th></tr></thead>
+            <tbody id="upcomingBody"></tbody></table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span class="card-title">Mantenimientos recientes</span></div>
+          <div class="card-body table-wrap">
+            <table><thead><tr><th>Herramienta</th><th>Tipo</th><th>Técnico</th><th>Fecha</th><th>A tiempo</th></tr></thead>
+            <tbody id="dashLogBody"></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ TOOLS ============ -->
+      <section id="tab-tools" class="tab-panel hidden">
+        <div class="filters-row">
+          <div class="field">
+            <label>Buscar</label>
+            <input type="text" id="toolSearch" placeholder="Código, nombre, tipo, ubicación...">
+          </div>
+          <div class="field">
+            <label>Categoría</label>
+            <select id="toolCategoryFilter">
+              <option value="">Todas</option>
+              <option value="maquina">Máquina</option>
+              <option value="herramienta">Herramienta</option>
+              <option value="proceso">Proceso</option>
+              <option value="equipo">Equipo</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Estado</label>
+            <select id="toolStatusFilter">
+              <option value="">Todos</option>
+              <option value="activo">Activo</option>
+              <option value="en_mantenimiento">En mantenimiento</option>
+              <option value="baja">Baja</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" id="btnNewTool">+ Nueva herramienta</button>
+        </div>
+
+        <div class="card">
+          <div class="card-body table-wrap">
+            <table>
+              <thead><tr><th>Código</th><th>Nombre</th><th>Categoría</th><th>Línea</th><th>Estado</th><th></th></tr></thead>
+              <tbody id="toolsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tool detail -->
+        <div class="card hidden" id="toolDetailCard">
+          <div class="card-header">
+            <span class="card-title" id="toolDetailTitle">Detalle</span>
+            <button class="btn btn-secondary btn-sm" id="btnCloseToolDetail">Cerrar</button>
+          </div>
+          <div class="card-body">
+            <div id="toolDetailMeta" class="detail-meta"></div>
+            <div class="subtabs">
+              <button class="subtab-btn active" data-sub="sched">Programaciones</button>
+              <button class="subtab-btn" data-sub="log">Bitácora</button>
+            </div>
+            <div id="toolDetailBody"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ MAINTENANCE ============ -->
+      <section id="tab-maintenance" class="tab-panel hidden">
+        <div class="subtabs">
+          <button class="subtab-btn active" data-msub="schedules">Programaciones</button>
+          <button class="subtab-btn" data-msub="logs">Bitácora</button>
+        </div>
+
+        <div id="msub-schedules">
+          <div class="filters-row">
+            <div class="field">
+              <label>Filtro</label>
+              <select id="scheduleFilter">
+                <option value="">Todas activas</option>
+                <option value="overdue">Vencidas</option>
+                <option value="upcoming">Próximas a vencer</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Línea</label>
+              <select id="scheduleLineFilter"><option value="">Todas</option></select>
+            </div>
+            <div class="field">
+              <label>Técnico</label>
+              <select id="scheduleTechFilter"><option value="">Todos</option></select>
+            </div>
+            <button class="btn btn-primary" id="btnNewSchedule">+ Nueva programación</button>
+          </div>
+          <div class="card">
+            <div class="card-body table-wrap">
+              <table>
+                <thead><tr><th>Herramienta</th><th>Tipo</th><th>Línea</th><th>Técnico</th><th>Turno</th><th>Próxima</th><th>Estado</th><th></th></tr></thead>
+                <tbody id="schedulesBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="msub-logs" class="hidden">
+          <div class="filters-row">
+            <button class="btn btn-primary" id="btnNewLog">+ Registrar mantenimiento</button>
+          </div>
+          <div class="card">
+            <div class="card-body table-wrap">
+              <table>
+                <thead><tr><th>Herramienta</th><th>Tipo</th><th>Técnico</th><th>Turno</th><th>Fecha</th><th>A tiempo</th><th></th></tr></thead>
+                <tbody id="logsBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ CONFIG ============ -->
+      <section id="tab-config" class="tab-panel hidden">
+        <div class="subtabs">
+          <button class="subtab-btn active" data-csub="technicians">Técnicos</button>
+          <button class="subtab-btn" data-csub="lines">Líneas de ensamble</button>
+        </div>
+
+        <div id="csub-technicians">
+          <div class="filters-row">
+            <button class="btn btn-primary" id="btnNewTechnician">+ Nuevo técnico</button>
+          </div>
+          <div class="card">
+            <div class="card-body table-wrap">
+              <table>
+                <thead><tr><th>Nombre</th><th>Área</th><th>Estado</th><th></th></tr></thead>
+                <tbody id="techniciansBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="csub-lines" class="hidden">
+          <div class="filters-row">
+            <button class="btn btn-primary" id="btnNewLine">+ Nueva línea</button>
+          </div>
+          <div class="card">
+            <div class="card-body table-wrap">
+              <table>
+                <thead><tr><th>Línea de ensamble</th><th>Herramientas asignadas</th><th></th></tr></thead>
+                <tbody id="linesBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">—</h3>
+      <button class="modal-close" id="modalCloseBtn" aria-label="Cerrar">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<div id="toast" class="hidden"></div>
+
+<script>
+'use strict';
+
+/* ======================================================================
+   CAPA DE DATOS LOCAL (reemplaza al backend Express+SQLite para esta
+   vista previa). Misma lógica y mismas rutas que /routes/*.js del repo,
+   pero persistida en localStorage del navegador en vez de un servidor.
+   ====================================================================== */
+
+const STORAGE_KEY = 'toolmaint_demo_v3';
+const VALID_STATUS = ['activo', 'en_mantenimiento', 'baja'];
+const VALID_CATEGORY = ['maquina', 'herramienta', 'proceso', 'equipo'];
+const VALID_SHIFT = ['Turno 1', 'Turno 2', 'Turno 3'];
+
+let db;
+
+function httpError(status, message) { const e = new Error(message); e.status = status; return e; }
+function clone(x) { return JSON.parse(JSON.stringify(x)); }
+function nowIso() { return new Date().toISOString().replace('T', ' ').slice(0, 19); }
+function today() { return new Date().toISOString().slice(0, 10); }
+function toDate(s) { return new Date(s + 'T00:00:00'); }
+function daysBetween(a, b) { return (toDate(b) - toDate(a)) / 86400000; }
+function addDays(dateStr, days) {
+  const d = toDate(dateStr);
+  d.setDate(d.getDate() + Number(days));
+  return d.toISOString().slice(0, 10);
+}
+function nextId(table) { db.seq[table] += 1; return db.seq[table]; }
+function validateShift(shift) {
+  if (shift && !VALID_SHIFT.includes(shift)) return `Turno inválido. Usa: ${VALID_SHIFT.join(', ')}`;
+  return null;
+}
+
+/* ---------------------------- Tools ---------------------------- */
+
+function withLineJoin(t) {
+  const l = db.lines.find(l => String(l.id) === String(t.assembly_line_id));
+  return { ...t, line_name: l ? l.name : null };
+}
+
+function toolsList({ query }) {
+  let rows = db.tools.slice();
+  if (query.status) rows = rows.filter(t => t.status === query.status);
+  if (query.category) rows = rows.filter(t => t.category === query.category);
+  if (query.assembly_line_id) rows = rows.filter(t => String(t.assembly_line_id) === String(query.assembly_line_id));
+  if (query.q) {
+    const q = query.q.toLowerCase();
+    rows = rows.filter(t => [t.code, t.name, t.type, t.location].some(v => v && v.toLowerCase().includes(q)));
+  }
+  rows.sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+  return clone(rows.map(withLineJoin));
+}
+function toolsGet({ params }) {
+  const t = db.tools.find(t => String(t.id) === String(params.id));
+  if (!t) throw httpError(404, 'Herramienta no encontrada');
+  return clone(withLineJoin(t));
+}
+function toolsLookup({ params }) {
+  const t = db.tools.find(t => t.code === params.code);
+  if (!t) throw httpError(404, 'No existe una herramienta con ese código');
+  return clone(withLineJoin(t));
+}
+function validateTool(body) {
+  const { code, name, category, status } = body;
+  if (!code || !String(code).trim()) return 'El código es obligatorio';
+  if (!name || !String(name).trim()) return 'El nombre es obligatorio';
+  if (category && !VALID_CATEGORY.includes(category)) return `Categoría inválida. Usa: ${VALID_CATEGORY.join(', ')}`;
+  if (status && !VALID_STATUS.includes(status)) return `Estado inválido. Usa: ${VALID_STATUS.join(', ')}`;
+  return null;
+}
+function toolsCreate({ body }) {
+  const err = validateTool(body);
+  if (err) throw httpError(400, err);
+  const { code, name, category, type, location, assembly_line_id, status, notes } = body;
+  if (db.tools.some(t => t.code === String(code).trim())) throw httpError(409, 'Ya existe una herramienta con ese código');
+  const now = nowIso();
+  const t = {
+    id: nextId('tools'), code: String(code).trim(), name: String(name).trim(),
+    category: category || 'herramienta', type: type || null, location: location || null,
+    assembly_line_id: assembly_line_id || null, status: status || 'activo', notes: notes || null,
+    created_at: now, updated_at: now
+  };
+  db.tools.push(t);
+  return clone(withLineJoin(t));
+}
+function toolsUpdate({ params, body }) {
+  const t = db.tools.find(t => String(t.id) === String(params.id));
+  if (!t) throw httpError(404, 'Herramienta no encontrada');
+  const { code, name, category, status } = body;
+  if (category && !VALID_CATEGORY.includes(category)) throw httpError(400, `Categoría inválida. Usa: ${VALID_CATEGORY.join(', ')}`);
+  if (status && !VALID_STATUS.includes(status)) throw httpError(400, `Estado inválido. Usa: ${VALID_STATUS.join(', ')}`);
+  const newCode = code != null && code !== '' ? String(code).trim() : t.code;
+  if (newCode !== t.code && db.tools.some(o => o.code === newCode)) throw httpError(409, 'Ya existe otra herramienta con ese código');
+  const { type, location, assembly_line_id, notes } = body;
+  t.code = newCode;
+  t.name = name != null && name !== '' ? String(name).trim() : t.name;
+  t.category = category || t.category;
+  t.type = type !== undefined ? type : t.type;
+  t.location = location !== undefined ? location : t.location;
+  t.assembly_line_id = assembly_line_id !== undefined ? (assembly_line_id || null) : t.assembly_line_id;
+  t.status = status || t.status;
+  t.notes = notes !== undefined ? notes : t.notes;
+  t.updated_at = nowIso();
+  return clone(withLineJoin(t));
+}
+function toolsDelete({ params }) {
+  const idx = db.tools.findIndex(t => String(t.id) === String(params.id));
+  if (idx === -1) throw httpError(404, 'Herramienta no encontrada');
+  const id = db.tools[idx].id;
+  db.tools.splice(idx, 1);
+  const schedIds = db.schedules.filter(s => String(s.tool_id) === String(id)).map(s => s.id);
+  db.schedules = db.schedules.filter(s => String(s.tool_id) !== String(id));
+  db.checklistItems = db.checklistItems.filter(c => !schedIds.includes(c.schedule_id));
+  db.notifications = db.notifications.filter(n => !schedIds.includes(n.schedule_id));
+  const logIds = db.logs.filter(l => String(l.tool_id) === String(id)).map(l => l.id);
+  db.logs = db.logs.filter(l => String(l.tool_id) !== String(id));
+  db.logChecklist = db.logChecklist.filter(c => !logIds.includes(c.log_id));
+  return null;
+}
+function withTechJoin(row, key = 'assigned_technician_id') {
+  const tech = db.technicians.find(t => String(t.id) === String(row[key]));
+  return { ...row, technician_name: tech ? tech.name : null };
+}
+function toolSchedules({ params }) {
+  return clone(db.schedules.filter(s => String(s.tool_id) === String(params.id)).map(s => withTechJoin(s)).sort((a, b) => a.next_due_date.localeCompare(b.next_due_date)));
+}
+function toolLogs({ params }) {
+  return clone(db.logs.filter(l => String(l.tool_id) === String(params.id)).map(l => withTechJoin(l, 'technician_id')).sort((a, b) => b.performed_date.localeCompare(a.performed_date)));
+}
+
+/* ------------------------- Technicians ------------------------- */
+
+function techniciansList({ query }) {
+  let rows = db.technicians.slice();
+  if (query.active !== undefined) {
+    const want = query.active === 'true' || query.active === '1';
+    rows = rows.filter(t => !!t.active === want);
+  }
+  rows.sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+  return clone(rows);
+}
+function techniciansCreate({ body }) {
+  const { name, area } = body;
+  if (!name || !String(name).trim()) throw httpError(400, 'El nombre es obligatorio');
+  const t = { id: nextId('technicians'), name: String(name).trim(), area: area || null, active: 1, created_at: nowIso() };
+  db.technicians.push(t);
+  return clone(t);
+}
+function techniciansUpdate({ params, body }) {
+  const t = db.technicians.find(t => String(t.id) === String(params.id));
+  if (!t) throw httpError(404, 'Técnico no encontrado');
+  const { name, area, active } = body;
+  t.name = name != null && name !== '' ? String(name).trim() : t.name;
+  t.area = area !== undefined ? area : t.area;
+  t.active = active !== undefined ? (active ? 1 : 0) : t.active;
+  return clone(t);
+}
+function techniciansDelete({ params }) {
+  const idx = db.technicians.findIndex(t => String(t.id) === String(params.id));
+  if (idx === -1) throw httpError(404, 'Técnico no encontrado');
+  const id = db.technicians[idx].id;
+  db.technicians.splice(idx, 1);
+  db.schedules.forEach(s => { if (String(s.assigned_technician_id) === String(id)) s.assigned_technician_id = null; });
+  db.logs.forEach(l => { if (String(l.technician_id) === String(id)) l.technician_id = null; });
+  return null;
+}
+
+/* ---------------------------- Lines ---------------------------- */
+
+function linesList() {
+  return clone(db.lines.slice().sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })));
+}
+function linesCreate({ body }) {
+  const { name } = body;
+  if (!name || !String(name).trim()) throw httpError(400, 'El nombre es obligatorio');
+  if (db.lines.some(l => l.name === String(name).trim())) throw httpError(409, 'Ya existe una línea con ese nombre');
+  const l = { id: nextId('lines'), name: String(name).trim(), created_at: nowIso() };
+  db.lines.push(l);
+  return clone(l);
+}
+function linesUpdate({ params, body }) {
+  const l = db.lines.find(l => String(l.id) === String(params.id));
+  if (!l) throw httpError(404, 'Línea no encontrada');
+  const { name } = body;
+  if (!name || !String(name).trim()) throw httpError(400, 'El nombre es obligatorio');
+  const newName = String(name).trim();
+  if (newName !== l.name && db.lines.some(o => o.name === newName)) throw httpError(409, 'Ya existe una línea con ese nombre');
+  l.name = newName;
+  return clone(l);
+}
+function linesDelete({ params }) {
+  const idx = db.lines.findIndex(l => String(l.id) === String(params.id));
+  if (idx === -1) throw httpError(404, 'Línea no encontrada');
+  const id = db.lines[idx].id;
+  db.lines.splice(idx, 1);
+  db.tools.forEach(t => { if (String(t.assembly_line_id) === String(id)) t.assembly_line_id = null; });
+  return null;
+}
+
+/* ------------------------- Schedules ------------------------- */
+
+function withScheduleJoin(s) {
+  const t = db.tools.find(t => String(t.id) === String(s.tool_id));
+  const l = t ? db.lines.find(l => String(l.id) === String(t.assembly_line_id)) : null;
+  const tech = db.technicians.find(te => String(te.id) === String(s.assigned_technician_id));
+  return {
+    ...s,
+    tool_code: t ? t.code : null, tool_name: t ? t.name : null, tool_status: t ? t.status : null,
+    line_name: l ? l.name : null, technician_name: tech ? tech.name : null
+  };
+}
+
+function schedulesList({ query }) {
+  let rows = db.schedules.slice();
+  if (query.tool_id) rows = rows.filter(s => String(s.tool_id) === String(query.tool_id));
+  if (query.assembly_line_id) {
+    rows = rows.filter(s => {
+      const t = db.tools.find(t => String(t.id) === String(s.tool_id));
+      return t && String(t.assembly_line_id) === String(query.assembly_line_id);
+    });
+  }
+  if (query.assigned_technician_id) rows = rows.filter(s => String(s.assigned_technician_id) === String(query.assigned_technician_id));
+  if (query.active !== undefined) {
+    const want = query.active === 'true' || query.active === '1';
+    rows = rows.filter(s => !!s.active === want);
+  }
+  const t0 = today();
+  if (query.due === 'overdue') rows = rows.filter(s => s.active && s.next_due_date < t0);
+  else if (query.due === 'upcoming') rows = rows.filter(s => s.active && s.next_due_date >= t0 && daysBetween(t0, s.next_due_date) <= s.alert_days_before);
+  rows.sort((a, b) => a.next_due_date.localeCompare(b.next_due_date));
+  return clone(rows.map(withScheduleJoin));
+}
+function scheduleGet({ params }) {
+  const s = db.schedules.find(s => String(s.id) === String(params.id));
+  if (!s) throw httpError(404, 'Programación no encontrada');
+  const row = withScheduleJoin(s);
+  row.checklist = db.checklistItems.filter(c => String(c.schedule_id) === String(params.id)).sort((a, b) => a.sort_order - b.sort_order || a.id - b.id);
+  return clone(row);
+}
+function schedulesCreate({ body }) {
+  const { tool_id, maintenance_type, frequency_days, assigned_technician_id, shift, alert_days_before, last_done_date, next_due_date, notes, checklist } = body;
+  if (!tool_id) throw httpError(400, 'tool_id es obligatorio');
+  if (!maintenance_type || !String(maintenance_type).trim()) throw httpError(400, 'maintenance_type es obligatorio');
+  if (!frequency_days || Number(frequency_days) <= 0) throw httpError(400, 'frequency_days debe ser un número mayor a 0');
+  const shiftErr = validateShift(shift);
+  if (shiftErr) throw httpError(400, shiftErr);
+  const tool = db.tools.find(t => String(t.id) === String(tool_id));
+  if (!tool) throw httpError(404, 'Herramienta no encontrada');
+  if (assigned_technician_id && !db.technicians.find(t => String(t.id) === String(assigned_technician_id))) {
+    throw httpError(404, 'Técnico asignado no encontrado');
+  }
+  const due = next_due_date || addDays(last_done_date || today(), frequency_days);
+  const s = {
+    id: nextId('schedules'), tool_id: tool.id, maintenance_type: String(maintenance_type).trim(),
+    frequency_days: Number(frequency_days), assigned_technician_id: assigned_technician_id || null,
+    shift: shift || null, alert_days_before: alert_days_before != null && alert_days_before !== '' ? Number(alert_days_before) : 7,
+    last_done_date: last_done_date || null, next_due_date: due, active: 1, notes: notes || null, created_at: nowIso()
+  };
+  db.schedules.push(s);
+  if (Array.isArray(checklist)) {
+    checklist.filter(c => c && String(c).trim()).forEach((desc, idx) => {
+      db.checklistItems.push({ id: nextId('checklistItems'), schedule_id: s.id, description: String(desc).trim(), sort_order: idx, created_at: nowIso() });
+    });
+  }
+  const row = withScheduleJoin(s);
+  row.checklist = db.checklistItems.filter(c => c.schedule_id === s.id);
+  return clone(row);
+}
+function scheduleUpdate({ params, body }) {
+  const s = db.schedules.find(s => String(s.id) === String(params.id));
+  if (!s) throw httpError(404, 'Programación no encontrada');
+  const { maintenance_type, frequency_days, assigned_technician_id, shift, alert_days_before, last_done_date, next_due_date, active, notes, checklist } = body;
+  const shiftErr = validateShift(shift);
+  if (shiftErr) throw httpError(400, shiftErr);
+  if (assigned_technician_id && !db.technicians.find(t => String(t.id) === String(assigned_technician_id))) {
+    throw httpError(404, 'Técnico asignado no encontrado');
+  }
+  s.maintenance_type = maintenance_type !== undefined && maintenance_type !== '' ? String(maintenance_type).trim() : s.maintenance_type;
+  s.frequency_days = frequency_days !== undefined && frequency_days !== '' ? Number(frequency_days) : s.frequency_days;
+  s.assigned_technician_id = assigned_technician_id !== undefined ? (assigned_technician_id || null) : s.assigned_technician_id;
+  s.shift = shift !== undefined ? (shift || null) : s.shift;
+  s.alert_days_before = alert_days_before !== undefined && alert_days_before !== '' ? Number(alert_days_before) : s.alert_days_before;
+  s.last_done_date = last_done_date !== undefined ? (last_done_date || null) : s.last_done_date;
+  s.next_due_date = next_due_date !== undefined && next_due_date !== '' ? next_due_date : s.next_due_date;
+  s.active = active !== undefined ? (active ? 1 : 0) : s.active;
+  s.notes = notes !== undefined ? notes : s.notes;
+  if (Array.isArray(checklist)) {
+    db.checklistItems = db.checklistItems.filter(c => c.schedule_id !== s.id);
+    checklist.filter(c => c && String(c).trim()).forEach((desc, idx) => {
+      db.checklistItems.push({ id: nextId('checklistItems'), schedule_id: s.id, description: String(desc).trim(), sort_order: idx, created_at: nowIso() });
+    });
+  }
+  const row = withScheduleJoin(s);
+  row.checklist = db.checklistItems.filter(c => c.schedule_id === s.id).sort((a, b) => a.sort_order - b.sort_order);
+  return clone(row);
+}
+function scheduleDelete({ params }) {
+  const idx = db.schedules.findIndex(s => String(s.id) === String(params.id));
+  if (idx === -1) throw httpError(404, 'Programación no encontrada');
+  const id = db.schedules[idx].id;
+  db.schedules.splice(idx, 1);
+  db.checklistItems = db.checklistItems.filter(c => c.schedule_id !== id);
+  db.notifications = db.notifications.filter(n => n.schedule_id !== id);
+  db.logs.forEach(l => { if (l.schedule_id === id) l.schedule_id = null; });
+  return null;
+}
+
+/* ---------------------------- Logs ---------------------------- */
+
+function withLogJoin(l) {
+  const t = db.tools.find(t => String(t.id) === String(l.tool_id));
+  const tech = db.technicians.find(te => String(te.id) === String(l.technician_id));
+  return { ...l, tool_code: t ? t.code : null, tool_name: t ? t.name : null, technician_name: tech ? tech.name : null };
+}
+
+function logsList({ query }) {
+  let rows = db.logs.slice();
+  if (query.tool_id) rows = rows.filter(l => String(l.tool_id) === String(query.tool_id));
+  rows.sort((a, b) => b.performed_date.localeCompare(a.performed_date) || (b.id - a.id));
+  if (query.limit) rows = rows.slice(0, Number(query.limit));
+  return clone(rows.map(withLogJoin));
+}
+function logGet({ params }) {
+  const l = db.logs.find(l => String(l.id) === String(params.id));
+  if (!l) throw httpError(404, 'Registro no encontrado');
+  const row = withLogJoin(l);
+  row.checklist = db.logChecklist.filter(c => c.log_id === l.id);
+  return clone(row);
+}
+function logsCreate({ body }) {
+  const { tool_id, schedule_id, maintenance_type, technician_id, shift, performed_date, description, parts_used, checklist } = body;
+  if (!tool_id) throw httpError(400, 'tool_id es obligatorio');
+  if (!maintenance_type || !String(maintenance_type).trim()) throw httpError(400, 'maintenance_type es obligatorio');
+  const shiftErr = validateShift(shift);
+  if (shiftErr) throw httpError(400, shiftErr);
+  const tool = db.tools.find(t => String(t.id) === String(tool_id));
+  if (!tool) throw httpError(404, 'Herramienta no encontrada');
+  if (technician_id && !db.technicians.find(t => String(t.id) === String(technician_id))) throw httpError(404, 'Técnico no encontrado');
+
+  let schedule = null;
+  if (schedule_id) {
+    schedule = db.schedules.find(s => String(s.id) === String(schedule_id) && String(s.tool_id) === String(tool_id));
+    if (!schedule) throw httpError(404, 'Programación no encontrada para esta herramienta');
+  }
+
+  const doneDate = performed_date || today();
+  const onTime = schedule ? (doneDate <= schedule.next_due_date ? 1 : 0) : null;
+
+  const log = {
+    id: nextId('logs'), tool_id: tool.id, schedule_id: schedule ? schedule.id : null,
+    maintenance_type: String(maintenance_type).trim(), technician_id: technician_id || null, shift: shift || null,
+    performed_date: doneDate, description: description || null, parts_used: parts_used || null, on_time: onTime, created_at: nowIso()
+  };
+  db.logs.push(log);
+
+  if (Array.isArray(checklist)) {
+    checklist.forEach(item => {
+      if (!item || !item.description) return;
+      db.logChecklist.push({
+        id: nextId('logChecklist'), log_id: log.id, checklist_item_id: item.checklist_item_id || null,
+        description: String(item.description).trim(), completed: item.completed ? 1 : 0, notes: item.notes || null
+      });
+    });
+  }
+
+  if (schedule) {
+    const oldDue = schedule.next_due_date;
+    schedule.last_done_date = doneDate;
+    schedule.next_due_date = addDays(doneDate, schedule.frequency_days);
+    db.notifications = db.notifications.filter(n => !(n.schedule_id === schedule.id && n.due_date_snapshot === oldDue));
+  }
+
+  const row = withLogJoin(log);
+  row.checklist = db.logChecklist.filter(c => c.log_id === log.id);
+  return clone(row);
+}
+function logDelete({ params }) {
+  const idx = db.logs.findIndex(l => String(l.id) === String(params.id));
+  if (idx === -1) throw httpError(404, 'Registro no encontrado');
+  const id = db.logs[idx].id;
+  db.logs.splice(idx, 1);
+  db.logChecklist = db.logChecklist.filter(c => c.log_id !== id);
+  return null;
+}
+
+/* ------------------------- Notifications ------------------------- */
+
+function syncNotifications() {
+  const t0 = today();
+  db.schedules.filter(s => s.active).forEach(s => {
+    const tool = db.tools.find(t => String(t.id) === String(s.tool_id));
+    if (!tool) return;
+    let type = null;
+    if (s.next_due_date < t0) type = 'overdue';
+    else if (daysBetween(t0, s.next_due_date) <= s.alert_days_before) type = 'upcoming';
+    if (!type) return;
+    const exists = db.notifications.some(n => n.schedule_id === s.id && n.type === type && n.due_date_snapshot === s.next_due_date);
+    if (exists) return;
+    const verb = type === 'overdue' ? 'vencido el' : 'vence el';
+    db.notifications.push({
+      id: nextId('notifications'), schedule_id: s.id, tool_id: tool.id, type, due_date_snapshot: s.next_due_date,
+      message: `${tool.code} — ${tool.name}: ${s.maintenance_type} ${verb} (${s.next_due_date})`,
+      read: 0, created_at: nowIso()
+    });
+  });
+}
+
+function notificationsList({ query }) {
+  syncNotifications();
+  let rows = db.notifications.map(n => {
+    const t = db.tools.find(t => String(t.id) === String(n.tool_id));
+    return { ...n, tool_code: t ? t.code : null, tool_name: t ? t.name : null };
+  });
+  if (query.unread === 'true' || query.unread === '1') rows = rows.filter(n => !n.read);
+  rows.sort((a, b) => {
+    if (a.type !== b.type) return a.type === 'overdue' ? -1 : 1;
+    if (a.due_date_snapshot !== b.due_date_snapshot) return a.due_date_snapshot.localeCompare(b.due_date_snapshot);
+    return b.created_at.localeCompare(a.created_at);
+  });
+  if (query.limit) rows = rows.slice(0, Number(query.limit));
+  return clone(rows);
+}
+function notificationsCount() {
+  syncNotifications();
+  return { unread: db.notifications.filter(n => !n.read).length };
+}
+function notificationRead({ params }) {
+  const n = db.notifications.find(n => String(n.id) === String(params.id));
+  if (!n) throw httpError(404, 'Notificación no encontrada');
+  n.read = 1;
+  return clone(n);
+}
+function notificationsReadAll() {
+  db.notifications.forEach(n => { n.read = 1; });
+  return { ok: true };
+}
+
+/* -------------------------- Dashboard -------------------------- */
+
+function dashboardSummary({ query }) {
+  const t0 = today();
+  const lineId = query.assembly_line_id;
+  const techId = query.assigned_technician_id;
+
+  let tools = db.tools.slice();
+  if (lineId) tools = tools.filter(t => String(t.assembly_line_id) === String(lineId));
+  const toolCounts = {};
+  tools.forEach(t => { toolCounts[t.status] = (toolCounts[t.status] || 0) + 1; });
+
+  let schedules = db.schedules.filter(s => s.active);
+  if (lineId) schedules = schedules.filter(s => { const t = db.tools.find(t => String(t.id) === String(s.tool_id)); return t && String(t.assembly_line_id) === String(lineId); });
+  if (techId) schedules = schedules.filter(s => String(s.assigned_technician_id) === String(techId));
+
+  const overdue = schedules.filter(s => s.next_due_date < t0).map(withScheduleJoin).sort((a, b) => a.next_due_date.localeCompare(b.next_due_date));
+  const upcoming = schedules.filter(s => s.next_due_date >= t0 && daysBetween(t0, s.next_due_date) <= s.alert_days_before).map(withScheduleJoin).sort((a, b) => a.next_due_date.localeCompare(b.next_due_date));
+
+  let logs = db.logs.slice();
+  if (lineId) logs = logs.filter(l => { const t = db.tools.find(t => String(t.id) === String(l.tool_id)); return t && String(t.assembly_line_id) === String(lineId); });
+  if (techId) logs = logs.filter(l => String(l.technician_id) === String(techId));
+
+  const recentLogs = logs.slice().sort((a, b) => b.performed_date.localeCompare(a.performed_date) || (b.id - a.id)).slice(0, 10).map(withLogJoin);
+
+  const horizon90 = addDays(t0, -90);
+  const complianceLogs = logs.filter(l => l.schedule_id != null && l.performed_date >= horizon90);
+  const onTimeCount = complianceLogs.filter(l => l.on_time === 1).length;
+  const compliance = complianceLogs.length > 0 ? Math.round((onTimeCount / complianceLogs.length) * 100) : null;
+
+  syncNotifications();
+  const unreadNotifications = db.notifications.filter(n => !n.read).length;
+
+  return clone({
+    total_tools: tools.length, tool_counts: toolCounts,
+    overdue_count: overdue.length, upcoming_count: upcoming.length, overdue, upcoming,
+    recent_logs: recentLogs, compliance_pct: compliance, compliance_sample: complianceLogs.length,
+    unread_notifications: unreadNotifications
+  });
+}
+
+function dashboardByLine() {
+  const t0 = today();
+  const rows = db.lines.map(line => {
+    const lineTools = db.tools.filter(t => String(t.assembly_line_id) === String(line.id)).map(t => t.id);
+    const schedules = db.schedules.filter(s => s.active && lineTools.includes(s.tool_id));
+    let overdue = 0, upcoming = 0, ok = 0;
+    schedules.forEach(s => {
+      if (s.next_due_date < t0) overdue++;
+      else if (daysBetween(t0, s.next_due_date) <= s.alert_days_before) upcoming++;
+      else ok++;
+    });
+    return { line_id: line.id, line_name: line.name, overdue, upcoming, ok, total: schedules.length };
+  });
+  const unassignedTools = db.tools.filter(t => !t.assembly_line_id).length;
+  return clone({ lines: rows, unassigned_tools: unassignedTools });
+}
+
+/* ----------------------------- Router ----------------------------- */
+
+function route(method, segs) {
+  if (segs[1] === 'tools') {
+    if (segs.length === 2) {
+      if (method === 'GET') return { h: toolsList };
+      if (method === 'POST') return { h: toolsCreate };
+    }
+    if (segs.length === 4 && segs[2] === 'lookup' && method === 'GET') return { h: toolsLookup, params: { code: segs[3] } };
+    if (segs.length === 3) {
+      const id = segs[2];
+      if (method === 'GET') return { h: toolsGet, params: { id } };
+      if (method === 'PUT') return { h: toolsUpdate, params: { id } };
+      if (method === 'DELETE') return { h: toolsDelete, params: { id } };
+    }
+    if (segs.length === 4 && method === 'GET') {
+      const id = segs[2];
+      if (segs[3] === 'schedules') return { h: toolSchedules, params: { id } };
+      if (segs[3] === 'logs') return { h: toolLogs, params: { id } };
+    }
+  }
+  if (segs[1] === 'technicians') {
+    if (segs.length === 2) {
+      if (method === 'GET') return { h: techniciansList };
+      if (method === 'POST') return { h: techniciansCreate };
+    }
+    if (segs.length === 3) {
+      const id = segs[2];
+      if (method === 'PUT') return { h: techniciansUpdate, params: { id } };
+      if (method === 'DELETE') return { h: techniciansDelete, params: { id } };
+    }
+  }
+  if (segs[1] === 'lines') {
+    if (segs.length === 2) {
+      if (method === 'GET') return { h: linesList };
+      if (method === 'POST') return { h: linesCreate };
+    }
+    if (segs.length === 3) {
+      const id = segs[2];
+      if (method === 'PUT') return { h: linesUpdate, params: { id } };
+      if (method === 'DELETE') return { h: linesDelete, params: { id } };
+    }
+  }
+  if (segs[1] === 'maintenance') {
+    if (segs[2] === 'schedules') {
+      if (segs.length === 3) {
+        if (method === 'GET') return { h: schedulesList };
+        if (method === 'POST') return { h: schedulesCreate };
+      }
+      if (segs.length === 4) {
+        const id = segs[3];
+        if (method === 'GET') return { h: scheduleGet, params: { id } };
+        if (method === 'PUT') return { h: scheduleUpdate, params: { id } };
+        if (method === 'DELETE') return { h: scheduleDelete, params: { id } };
+      }
+    }
+    if (segs[2] === 'logs') {
+      if (segs.length === 3) {
+        if (method === 'GET') return { h: logsList };
+        if (method === 'POST') return { h: logsCreate };
+      }
+      if (segs.length === 4) {
+        const id = segs[3];
+        if (method === 'GET') return { h: logGet, params: { id } };
+        if (method === 'DELETE') return { h: logDelete, params: { id } };
+      }
+    }
+  }
+  if (segs[1] === 'notifications') {
+    if (segs.length === 2 && method === 'GET') return { h: notificationsList };
+    if (segs.length === 3 && segs[2] === 'count' && method === 'GET') return { h: notificationsCount };
+    if (segs.length === 3 && segs[2] === 'read-all' && method === 'POST') return { h: notificationsReadAll };
+    if (segs.length === 4 && segs[3] === 'read' && method === 'POST') return { h: notificationRead, params: { id: segs[2] } };
+  }
+  if (segs[1] === 'dashboard') {
+    if (segs[2] === 'summary' && method === 'GET') return { h: dashboardSummary };
+    if (segs[2] === 'by-line' && method === 'GET') return { h: dashboardByLine };
+  }
+  return null;
+}
+
+function saveDB() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); } catch (e) { /* storage full/blocked */ } }
+
+function seedDB() {
+  db = {
+    tools: [], technicians: [], lines: [], schedules: [], checklistItems: [], logs: [], logChecklist: [], notifications: [],
+    seq: { tools: 0, technicians: 0, lines: 0, schedules: 0, checklistItems: 0, logs: 0, logChecklist: 0, notifications: 0 }
+  };
+
+  linesCreate({ body: { name: 'Línea 1' } });
+  linesCreate({ body: { name: 'Línea 2' } });
+  linesCreate({ body: { name: 'Ensamble Final' } });
+
+  techniciansCreate({ body: { name: 'Juan Pérez', area: 'Manufactura' } });
+  techniciansCreate({ body: { name: 'Ana Gómez', area: 'Mantenimiento' } });
+
+  toolsCreate({ body: { code: 'MAQ-001', name: 'Prensa Hidráulica A', category: 'maquina', type: 'Prensa', assembly_line_id: 1 } });
+  toolsCreate({ body: { code: 'TRQ-002', name: 'Troquel de Corte B', category: 'herramienta', assembly_line_id: 1 } });
+  toolsCreate({ body: { code: 'PRC-003', name: 'Proceso de Soldadura', category: 'proceso', assembly_line_id: 2 } });
+  toolsCreate({ body: { code: 'CAL-004', name: 'Calibre de Espesor', category: 'herramienta', assembly_line_id: 3, status: 'en_mantenimiento' } });
+
+  const t0 = today();
+
+  schedulesCreate({
+    body: {
+      tool_id: 1, maintenance_type: 'Lubricación', frequency_days: 15, assigned_technician_id: 1, shift: 'Turno 1',
+      alert_days_before: 5, last_done_date: addDays(t0, -20), // vencida
+      checklist: ['Revisar nivel de aceite', 'Verificar presión hidráulica', 'Limpiar filtros']
+    }
+  });
+  schedulesCreate({
+    body: {
+      tool_id: 2, maintenance_type: 'Afilado', frequency_days: 30, assigned_technician_id: 2, shift: 'Turno 2',
+      alert_days_before: 7, last_done_date: addDays(t0, -25), // próxima
+      checklist: ['Revisar filo de la cuchilla', 'Verificar alineación']
+    }
+  });
+  schedulesCreate({
+    body: {
+      tool_id: 3, maintenance_type: 'Inspección de proceso', frequency_days: 60, assigned_technician_id: 1, shift: 'Turno 1',
+      alert_days_before: 5, last_done_date: addDays(t0, -10), // al día
+      checklist: ['Verificar parámetros de soldadura', 'Revisar consumibles']
+    }
+  });
+  schedulesCreate({
+    body: { tool_id: 4, maintenance_type: 'Calibración', frequency_days: 90, assigned_technician_id: 2, shift: 'Turno 3', alert_days_before: 10, last_done_date: addDays(t0, -5) }
+  });
+
+  // Un mantenimiento ya registrado (a tiempo) para poblar bitácora/cumplimiento.
+  logsCreate({
+    body: {
+      tool_id: 3, schedule_id: 3, maintenance_type: 'Inspección de proceso', technician_id: 1, shift: 'Turno 1',
+      performed_date: addDays(t0, -10), description: 'Inspección completa sin observaciones.',
+      checklist: [
+        { checklist_item_id: db.checklistItems.find(c => c.schedule_id === 3 && c.description.includes('parámetros'))?.id, description: 'Verificar parámetros de soldadura', completed: true },
+        { checklist_item_id: db.checklistItems.find(c => c.schedule_id === 3 && c.description.includes('consumibles'))?.id, description: 'Revisar consumibles', completed: true }
+      ]
+    }
+  });
+  // Recalcula la próxima fecha de la programación 3 tras ese registro previo, para que quede "al día" de nuevo.
+  const sched3 = db.schedules.find(s => s.id === 3);
+  sched3.last_done_date = addDays(t0, -10);
+  sched3.next_due_date = addDays(sched3.last_done_date, sched3.frequency_days);
+}
+
+function loadDB() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) { db = JSON.parse(raw); return; }
+  } catch (e) { /* ignore */ }
+  seedDB();
+  saveDB();
+}
+function resetDemo() { seedDB(); saveDB(); }
+
+loadDB();
+
+async function api(method, url, body) {
+  const u = new URL(url, 'https://demo.local');
+  const segs = u.pathname.split('/').filter(Boolean);
+  const query = Object.fromEntries(u.searchParams.entries());
+  const match = route(method, segs);
+  if (!match) throw new Error('Ruta no encontrada en la demo: ' + method + ' ' + url);
+  const result = match.h({ params: match.params || {}, query, body });
+  saveDB();
+  return result;
+}
+
+/* ======================================================================
+   INTERFAZ (idéntica a public/js/app.js del repo, sirviéndose de la
+   función api() local de arriba en vez de fetch a un servidor real).
+   ====================================================================== */
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return String(d).slice(0, 10);
+}
+
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+let toastTimer = null;
+function toast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = isError ? 'error' : '';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.classList.add('hidden'); }, 3200);
+}
+
+const CATEGORY_LABELS = { maquina: 'Máquina', herramienta: 'Herramienta', proceso: 'Proceso', equipo: 'Equipo' };
+function categoryLabel(cat) { return CATEGORY_LABELS[cat] || cat || '—'; }
+
+function statusBadge(status) {
+  const labels = { activo: 'Activo', en_mantenimiento: 'En mantenimiento', baja: 'Baja' };
+  return `<span class="badge badge-${status}">${labels[status] || status}</span>`;
+}
+
+function dueBadge(nextDue) {
+  const today = todayStr();
+  if (nextDue < today) return `<span class="badge badge-overdue">Vencida</span>`;
+  const horizon = new Date(); horizon.setDate(horizon.getDate() + 7);
+  if (nextDue <= horizon.toISOString().slice(0, 10)) return `<span class="badge badge-upcoming">Próxima</span>`;
+  return `<span class="badge badge-ok">Al día</span>`;
+}
+
+function onTimeBadge(onTime) {
+  if (onTime === null || onTime === undefined) return '<span class="muted">—</span>';
+  return onTime ? '<span class="badge badge-ok">A tiempo</span>' : '<span class="badge badge-overdue">Tarde</span>';
+}
+
+/* ======================== Modal ======================== */
+
+const modalOverlay = document.getElementById('modalOverlay');
+const modalTitle = document.getElementById('modalTitle');
+const modalBody = document.getElementById('modalBody');
+
+function openModal(title, bodyHtml) {
+  modalTitle.textContent = title;
+  modalBody.innerHTML = bodyHtml;
+  modalOverlay.classList.remove('hidden');
+}
+function closeModal() {
+  modalOverlay.classList.add('hidden');
+  modalBody.innerHTML = '';
+}
+document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+
+/* ======================== Shared caches ======================== */
+
+let toolsCache = [];
+let techniciansCache = [];
+let linesCache = [];
+
+async function refreshToolsCache() {
+  toolsCache = await api('GET', '/api/tools');
+  return toolsCache;
+}
+async function refreshTechniciansCache() {
+  techniciansCache = await api('GET', '/api/technicians?active=true');
+  return techniciansCache;
+}
+async function refreshLinesCache() {
+  linesCache = await api('GET', '/api/lines');
+  return linesCache;
+}
+function toolOptionsHtml(selectedId) {
+  return toolsCache.map(t =>
+    `<option value="${t.id}" ${String(t.id) === String(selectedId) ? 'selected' : ''}>${escapeHtml(t.code)} — ${escapeHtml(t.name)}</option>`
+  ).join('');
+}
+function technicianOptionsHtml(selectedId) {
+  return techniciansCache.map(t =>
+    `<option value="${t.id}" ${String(t.id) === String(selectedId) ? 'selected' : ''}>${escapeHtml(t.name)}</option>`
+  ).join('');
+}
+function lineOptionsHtml(selectedId) {
+  return linesCache.map(l =>
+    `<option value="${l.id}" ${String(l.id) === String(selectedId) ? 'selected' : ''}>${escapeHtml(l.name)}</option>`
+  ).join('');
+}
+const SHIFTS = ['Turno 1', 'Turno 2', 'Turno 3'];
+function shiftOptionsHtml(selected) {
+  return '<option value="">— Sin definir —</option>' + SHIFTS.map(s =>
+    `<option value="${s}" ${s === selected ? 'selected' : ''}>${s}</option>`
+  ).join('');
+}
+
+/* ======================== Navigation ======================== */
+
+const tabs = ['dashboard', 'tools', 'maintenance', 'config'];
+const renderers = {
+  dashboard: renderDashboard,
+  tools: renderTools,
+  maintenance: renderMaintenance,
+  config: renderConfig
+};
+const pageMeta = {
+  dashboard: { title: 'Dashboard', sub: 'Estado general del herramental de proceso' },
+  tools: { title: 'Herramientas', sub: 'Máquinas, herramientas y procesos que requieren mantenimiento' },
+  maintenance: { title: 'Mantenimiento', sub: 'Programación y bitácora de mantenimiento preventivo' },
+  config: { title: 'Configuración', sub: 'Técnicos de manufactura y líneas de ensamble' }
+};
+
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.nav-item[data-tab]');
+  if (!btn) return;
+  goToTab(btn.dataset.tab);
+});
+
+function goToTab(tab) {
+  tabs.forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
+  });
+  document.querySelectorAll('.nav-item[data-tab]').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  const meta = pageMeta[tab];
+  document.getElementById('pageTitle').textContent = meta.title;
+  document.getElementById('pageSub').textContent = meta.sub;
+  closeNotifPanel();
+  renderers[tab]().catch(err => toast(err.message, true));
+}
+
+/* ======================== Icons ======================== */
+
+const ICONS = {
+  box: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line>',
+  check: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 17"></polyline>',
+  tool: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>',
+  x: '<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>',
+  alert: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>',
+  clock: '<circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>',
+  target: '<circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle>'
+};
+function icon(name) {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg>`;
+}
+function statTile(cls, iconName, value, label) {
+  return `<div class="stat-tile ${cls}"><div class="icon">${icon(iconName)}</div><div><div class="n">${value}</div><div class="l">${label}</div></div></div>`;
+}
+
+/* ======================== Notifications ======================== */
+
+let notifPanelOpen = false;
+
+document.getElementById('btnNotifBell').addEventListener('click', async (e) => {
+  e.stopPropagation();
+  if (notifPanelOpen) return closeNotifPanel();
+  await openNotifPanel();
+});
+document.addEventListener('click', (e) => {
+  if (notifPanelOpen && !e.target.closest('.notif-wrap')) closeNotifPanel();
+});
+document.getElementById('btnMarkAllRead').addEventListener('click', async () => {
+  await api('POST', '/api/notifications/read-all');
+  await openNotifPanel();
+  await refreshNotifBadge();
+});
+
+async function refreshNotifBadge() {
+  const { unread } = await api('GET', '/api/notifications/count');
+  const badge = document.getElementById('notifBadge');
+  if (unread > 0) {
+    badge.textContent = unread > 99 ? '99+' : unread;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+async function openNotifPanel() {
+  const panel = document.getElementById('notifPanel');
+  await refreshNotifBadge();
+  const rows = await api('GET', '/api/notifications?limit=30');
+  document.getElementById('notifList').innerHTML = rows.length ? rows.map(n => `
+    <div class="notif-item type-${n.type} ${n.read ? '' : 'unread'}" data-id="${n.id}">
+      <div class="dot"></div>
+      <div>
+        <div class="msg">${escapeHtml(n.message)}</div>
+        <div class="when">${n.type === 'overdue' ? 'Vencido' : 'Próximo a vencer'} · ${escapeHtml(n.tool_code || '')}</div>
+      </div>
+    </div>`).join('') : `<div class="notif-empty">Sin notificaciones pendientes.</div>`;
+
+  panel.querySelectorAll('.notif-item').forEach(el => {
+    el.addEventListener('click', async () => {
+      await api('POST', `/api/notifications/${el.dataset.id}/read`);
+      el.classList.remove('unread');
+      await refreshNotifBadge();
+    });
+  });
+
+  panel.classList.remove('hidden');
+  notifPanelOpen = true;
+}
+function closeNotifPanel() {
+  document.getElementById('notifPanel').classList.add('hidden');
+  notifPanelOpen = false;
+}
+
+/* ======================== DASHBOARD ======================== */
+
+async function renderDashboard() {
+  await Promise.all([refreshLinesCache(), refreshTechniciansCache()]);
+
+  const lineSel = document.getElementById('dashLineFilter');
+  const techSel = document.getElementById('dashTechFilter');
+  const keepLine = lineSel.value, keepTech = techSel.value;
+  lineSel.innerHTML = '<option value="">Todas</option>' + lineOptionsHtml(keepLine);
+  techSel.innerHTML = '<option value="">Todos</option>' + technicianOptionsHtml(keepTech);
+  lineSel.value = keepLine;
+  techSel.value = keepTech;
+
+  lineSel.onchange = loadDashboard;
+  techSel.onchange = loadDashboard;
+
+  await loadDashboard();
+  await renderLineChart();
+  await refreshNotifBadge();
+}
+
+async function loadDashboard() {
+  const params = new URLSearchParams();
+  const lineId = document.getElementById('dashLineFilter').value;
+  const techId = document.getElementById('dashTechFilter').value;
+  if (lineId) params.set('assembly_line_id', lineId);
+  if (techId) params.set('assigned_technician_id', techId);
+
+  const s = await api('GET', '/api/dashboard/summary?' + params.toString());
+  const counts = s.tool_counts || {};
+
+  document.getElementById('statGrid').innerHTML =
+    statTile('', 'box', s.total_tools, 'Activos registrados') +
+    statTile('good', 'check', counts.activo || 0, 'Activos operando') +
+    statTile('warn', 'tool', counts.en_mantenimiento || 0, 'En mantenimiento') +
+    statTile('bad', 'alert', s.overdue_count, 'Vencidas') +
+    statTile('warn', 'clock', s.upcoming_count, 'Próximas a vencer') +
+    statTile(s.compliance_pct === null ? '' : (s.compliance_pct >= 80 ? 'good' : s.compliance_pct >= 50 ? 'warn' : 'bad'), 'target', s.compliance_pct === null ? '—' : s.compliance_pct + '%', 'Cumplimiento (90 días)');
+
+  document.getElementById('overdueBody').innerHTML = s.overdue.length ? s.overdue.map(r => `
+    <tr>
+      <td>${escapeHtml(r.tool_code)} — ${escapeHtml(r.tool_name)}</td>
+      <td>${escapeHtml(r.maintenance_type)}</td>
+      <td>${escapeHtml(r.line_name || '—')}</td>
+      <td>${escapeHtml(r.technician_name || '—')}</td>
+      <td class="mono">${fmtDate(r.next_due_date)}</td>
+    </tr>`).join('') : `<tr class="empty-row"><td colspan="5">Sin mantenimientos vencidos</td></tr>`;
+
+  document.getElementById('upcomingBody').innerHTML = s.upcoming.length ? s.upcoming.map(r => `
+    <tr>
+      <td>${escapeHtml(r.tool_code)} — ${escapeHtml(r.tool_name)}</td>
+      <td>${escapeHtml(r.maintenance_type)}</td>
+      <td>${escapeHtml(r.line_name || '—')}</td>
+      <td>${escapeHtml(r.technician_name || '—')}</td>
+      <td class="mono">${fmtDate(r.next_due_date)}</td>
+    </tr>`).join('') : `<tr class="empty-row"><td colspan="5">Nada próximo a vencer</td></tr>`;
+
+  document.getElementById('dashLogBody').innerHTML = s.recent_logs.length ? s.recent_logs.map(l => `
+    <tr>
+      <td>${escapeHtml(l.tool_code)} — ${escapeHtml(l.tool_name)}</td>
+      <td>${escapeHtml(l.maintenance_type)}</td>
+      <td>${escapeHtml(l.technician_name || '—')}</td>
+      <td class="mono">${fmtDate(l.performed_date)}</td>
+      <td>${onTimeBadge(l.on_time)}</td>
+    </tr>`).join('') : `<tr class="empty-row"><td colspan="5">Sin mantenimientos registrados</td></tr>`;
+}
+
+async function renderLineChart() {
+  const data = await api('GET', '/api/dashboard/by-line');
+  const el = document.getElementById('lineChart');
+  const lines = data.lines.filter(l => l.total > 0);
+
+  if (!lines.length) {
+    el.innerHTML = `<div class="line-chart-empty">Todavía no hay programaciones activas asociadas a una línea de ensamble.</div>`;
+    return;
+  }
+
+  const maxTotal = Math.max(...lines.map(l => l.total), 1);
+  el.innerHTML = lines.map(l => {
+    const w = (n) => (n / maxTotal * 100).toFixed(1);
+    return `
+      <div class="line-chart-row">
+        <div class="line-name">${escapeHtml(l.line_name)}</div>
+        <div class="line-bar" style="width:${(l.total / maxTotal * 100).toFixed(1)}%; min-width: 40px;">
+          ${l.overdue ? `<div class="seg-overdue" style="width:${(l.overdue / l.total * 100).toFixed(1)}%"></div>` : ''}
+          ${l.upcoming ? `<div class="seg-upcoming" style="width:${(l.upcoming / l.total * 100).toFixed(1)}%"></div>` : ''}
+          ${l.ok ? `<div class="seg-ok" style="width:${(l.ok / l.total * 100).toFixed(1)}%"></div>` : ''}
+        </div>
+        <div class="line-total">${l.total} progr.</div>
+      </div>`;
+  }).join('') + `
+    <div class="line-chart-legend">
+      <span><span class="sw" style="background:var(--critical)"></span> Vencidas</span>
+      <span><span class="sw" style="background:var(--warning)"></span> Próximas</span>
+      <span><span class="sw" style="background:var(--success)"></span> Al día</span>
+      ${data.unassigned_tools ? `<span>${data.unassigned_tools} herramienta(s) sin línea asignada</span>` : ''}
+    </div>`;
+}
+
+/* ======================== TOOLS ======================== */
+
+let currentToolDetailId = null;
+let toolDetailSub = 'sched';
+
+async function renderTools() {
+  await refreshLinesCache();
+  await loadToolsTable();
+}
+
+async function loadToolsTable() {
+  const q = document.getElementById('toolSearch').value.trim();
+  const category = document.getElementById('toolCategoryFilter').value;
+  const status = document.getElementById('toolStatusFilter').value;
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (category) params.set('category', category);
+  if (status) params.set('status', status);
+
+  const rows = await api('GET', '/api/tools?' + params.toString());
+  toolsCache = await api('GET', '/api/tools');
+
+  document.getElementById('toolsBody').innerHTML = rows.length ? rows.map(t => `
+    <tr>
+      <td class="mono">${escapeHtml(t.code)}</td>
+      <td>${escapeHtml(t.name)}</td>
+      <td>${categoryLabel(t.category)}</td>
+      <td>${escapeHtml(t.line_name || '—')}</td>
+      <td>${statusBadge(t.status)}</td>
+      <td class="row-actions">
+        <button class="btn btn-secondary btn-sm" data-action="view" data-id="${t.id}">Ver</button>
+        <button class="btn btn-secondary btn-sm" data-action="edit" data-id="${t.id}">Editar</button>
+        <button class="btn btn-danger btn-sm" data-action="delete" data-id="${t.id}">Eliminar</button>
+      </td>
+    </tr>`).join('') : `<tr class="empty-row"><td colspan="6">Sin resultados. Crea el primero con "+ Nueva herramienta".</td></tr>`;
+}
+
+document.getElementById('toolSearch').addEventListener('input', debounce(loadToolsTable, 250));
+document.getElementById('toolCategoryFilter').addEventListener('change', loadToolsTable);
+document.getElementById('toolStatusFilter').addEventListener('change', loadToolsTable);
+
+document.getElementById('toolsBody').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-action]');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  const action = btn.dataset.action;
+
+  if (action === 'view') return openToolDetail(id);
+  if (action === 'edit') return openToolForm(await api('GET', `/api/tools/${id}`));
+  if (action === 'delete') {
+    if (!confirm('¿Eliminar este activo? También se eliminarán sus programaciones y bitácora.')) return;
+    try {
+      await api('DELETE', `/api/tools/${id}`);
+      toast('Eliminado');
+      await loadToolsTable();
+      if (currentToolDetailId === id) document.getElementById('toolDetailCard').classList.add('hidden');
+    } catch (err) { toast(err.message, true); }
+  }
+});
+
+document.getElementById('btnNewTool').addEventListener('click', async () => {
+  await refreshLinesCache();
+  openToolForm(null);
+});
+
+function openToolForm(tool) {
+  const isEdit = !!tool;
+  openModal(isEdit ? 'Editar activo' : 'Nuevo activo (máquina, herramienta o proceso)', `
+    <form id="toolForm">
+      <div class="field-row">
+        <div class="field"><label>Código</label><input name="code" required value="${escapeHtml(tool?.code || '')}"></div>
+        <div class="field"><label>Nombre</label><input name="name" required value="${escapeHtml(tool?.name || '')}"></div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Categoría</label>
+          <select name="category">
+            <option value="maquina" ${tool?.category === 'maquina' ? 'selected' : ''}>Máquina</option>
+            <option value="herramienta" ${!tool || tool?.category === 'herramienta' ? 'selected' : ''}>Herramienta</option>
+            <option value="proceso" ${tool?.category === 'proceso' ? 'selected' : ''}>Proceso</option>
+            <option value="equipo" ${tool?.category === 'equipo' ? 'selected' : ''}>Equipo</option>
+          </select>
+        </div>
+        <div class="field"><label>Tipo (opcional)</label><input name="type" placeholder="Ej. Prensa hidráulica, troquel..." value="${escapeHtml(tool?.type || '')}"></div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Línea de ensamble</label>
+          <select name="assembly_line_id">
+            <option value="">— Sin línea —</option>
+            ${lineOptionsHtml(tool?.assembly_line_id)}
+          </select>
+        </div>
+        <div class="field"><label>Ubicación</label><input name="location" value="${escapeHtml(tool?.location || '')}"></div>
+      </div>
+      <div class="field">
+        <label>Estado</label>
+        <select name="status">
+          <option value="activo" ${!tool || tool?.status === 'activo' ? 'selected' : ''}>Activo</option>
+          <option value="en_mantenimiento" ${tool?.status === 'en_mantenimiento' ? 'selected' : ''}>En mantenimiento</option>
+          <option value="baja" ${tool?.status === 'baja' ? 'selected' : ''}>Baja</option>
+        </select>
+      </div>
+      <div class="field"><label>Notas</label><textarea name="notes">${escapeHtml(tool?.notes || '')}</textarea></div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" id="toolFormCancel">Cancelar</button>
+        <button type="submit" class="btn btn-primary">${isEdit ? 'Guardar cambios' : 'Crear'}</button>
+      </div>
+    </form>
+  `);
+  document.getElementById('toolFormCancel').addEventListener('click', closeModal);
+  document.getElementById('toolForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const payload = Object.fromEntries(fd.entries());
+    try {
+      if (isEdit) await api('PUT', `/api/tools/${tool.id}`, payload);
+      else await api('POST', '/api/tools', payload);
+      toast(isEdit ? 'Activo actualizado' : 'Activo creado');
+      closeModal();
+      await loadToolsTable();
+    } catch (err) { toast(err.message, true); }
+  });
+}
+
+async function openToolDetail(id) {
+  currentToolDetailId = id;
+  toolDetailSub = 'sched';
+  const tool = await api('GET', `/api/tools/${id}`);
+  document.getElementById('toolDetailTitle').textContent = `${tool.code} — ${tool.name}`;
+  document.getElementById('toolDetailMeta').innerHTML = `
+    <span class="chip">Categoría: <strong>${categoryLabel(tool.category)}</strong></span>
+    <span class="chip">Línea: <strong>${escapeHtml(tool.line_name || 'Sin asignar')}</strong></span>
+    <span class="chip">Ubicación: <strong>${escapeHtml(tool.location || '—')}</strong></span>
+    <span class="chip">Estado: <strong>${categoryLabelStatus(tool.status)}</strong></span>
+  `;
+  document.getElementById('toolDetailCard').classList.remove('hidden');
+  document.querySelectorAll('#toolDetailCard .subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.sub === 'sched'));
+  await renderToolDetailBody();
+  document.getElementById('toolDetailCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function categoryLabelStatus(status) {
+  const labels = { activo: 'Activo', en_mantenimiento: 'En mantenimiento', baja: 'Baja' };
+  return labels[status] || status;
+}
+
+document.getElementById('btnCloseToolDetail').addEventListener('click', () => {
+  document.getElementById('toolDetailCard').classList.add('hidden');
+  currentToolDetailId = null;
+});
+
+document.querySelectorAll('#toolDetailCard .subtab-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    toolDetailSub = btn.dataset.sub;
+    document.querySelectorAll('#toolDetailCard .subtab-btn').forEach(b => b.classList.toggle('active', b === btn));
+    await renderToolDetailBody();
+  });
+});
+
+async function renderToolDetailBody() {
+  const id = currentToolDetailId;
+  const body = document.getElementById('toolDetailBody');
+  if (toolDetailSub === 'sched') {
+    const rows = await api('GET', `/api/tools/${id}/schedules`);
+    body.innerHTML = rows.length ? `<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Técnico</th><th>Turno</th><th>Frecuencia</th><th>Próxima</th><th>Estado</th></tr></thead><tbody>${
+      rows.map(s => `<tr><td>${escapeHtml(s.maintenance_type)}</td><td>${escapeHtml(s.technician_name || '—')}</td><td>${escapeHtml(s.shift || '—')}</td><td>${s.frequency_days} días</td><td class="mono">${fmtDate(s.next_due_date)}</td><td>${s.active ? dueBadge(s.next_due_date) : '<span class="badge">Inactiva</span>'}</td></tr>`).join('')
+    }</tbody></table></div>` : `<p class="muted">Sin programaciones para este activo.</p>`;
+  } else {
+    const rows = await api('GET', `/api/tools/${id}/logs`);
+    body.innerHTML = rows.length ? `<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Técnico</th><th>Turno</th><th>A tiempo</th><th>Descripción</th></tr></thead><tbody>${
+      rows.map(l => `<tr><td class="mono">${fmtDate(l.performed_date)}</td><td>${escapeHtml(l.maintenance_type)}</td><td>${escapeHtml(l.technician_name || '—')}</td><td>${escapeHtml(l.shift || '—')}</td><td>${onTimeBadge(l.on_time)}</td><td>${escapeHtml(l.description || '—')}</td></tr>`).join('')
+    }</tbody></table></div>` : `<p class="muted">Sin mantenimientos registrados para este activo.</p>`;
+  }
+}
+
+/* ======================== MAINTENANCE ======================== */
+
+let maintSub = 'schedules';
+
+async function renderMaintenance() {
+  await Promise.all([refreshToolsCache(), refreshTechniciansCache(), refreshLinesCache()]);
+
+  const lineSel = document.getElementById('scheduleLineFilter');
+  const techSel = document.getElementById('scheduleTechFilter');
+  lineSel.innerHTML = '<option value="">Todas</option>' + lineOptionsHtml();
+  techSel.innerHTML = '<option value="">Todos</option>' + technicianOptionsHtml();
+
+  await loadSchedules();
+  await loadLogs();
+}
+
+document.querySelectorAll('#tab-maintenance .subtabs .subtab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    maintSub = btn.dataset.msub;
+    document.querySelectorAll('#tab-maintenance .subtabs .subtab-btn').forEach(b => b.classList.toggle('active', b === btn));
+    document.getElementById('msub-schedules').classList.toggle('hidden', maintSub !== 'schedules');
+    document.getElementById('msub-logs').classList.toggle('hidden', maintSub !== 'logs');
+  });
+});
+
+document.getElementById('scheduleFilter').addEventListener('change', loadSchedules);
+document.getElementById('scheduleLineFilter').addEventListener('change', loadSchedules);
+document.getElementById('scheduleTechFilter').addEventListener('change', loadSchedules);
+
+async function loadSchedules() {
+  const due = document.getElementById('scheduleFilter').value;
+  const lineId = document.getElementById('scheduleLineFilter').value;
+  const techId = document.getElementById('scheduleTechFilter').value;
+  const params = new URLSearchParams();
+  if (due) params.set('due', due); else params.set('active', 'true');
+  if (lineId) params.set('assembly_line_id', lineId);
+  if (techId) params.set('assigned_technician_id', techId);
+  const rows = await api('GET', '/api/maintenance/schedules?' + params.toString());
+
+  document.getElementById('schedulesBody').innerHTML = rows.length ? rows.map(s => `
+    <tr>
+      <td>${escapeHtml(s.tool_code)} — ${escapeHtml(s.tool_name)}</td>
+      <td>${escapeHtml(s.maintenance_type)}</td>
+      <td>${escapeHtml(s.line_name || '—')}</td>
+      <td>${escapeHtml(s.technician_name || '—')}</td>
+      <td>${escapeHtml(s.shift || '—')}</td>
+      <td class="mono">${fmtDate(s.next_due_date)}</td>
+      <td>${dueBadge(s.next_due_date)}</td>
+      <td class="row-actions">
+        <button class="btn btn-secondary btn-sm" data-action="edit-sched" data-id="${s.id}">Editar</button>
+        <button class="btn btn-danger btn-sm" data-action="delete-sched" data-id="${s.id}">Eliminar</button>
+      </td>
+    </tr>`).join('') : `<tr class="empty-row"><td colspan="8">Sin programaciones para este filtro.</td></tr>`;
+}
+
+document.getElementById('schedulesBody').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-action]');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  if (btn.dataset.action === 'delete-sched') {
+    if (!confirm('¿Eliminar esta programación?')) return;
+    await api('DELETE', `/api/maintenance/schedules/${id}`);
+    toast('Programación eliminada');
+    await loadSchedules();
+  } else if (btn.dataset.action === 'edit-sched') {
+    const s = await api('GET', `/api/maintenance/schedules/${id}`);
+    openScheduleForm(s);
+  }
+});
+
+document.getElementById('btnNewSchedule').addEventListener('click', () => openScheduleForm(null));
+
+function checklistRowHtml(desc) {
+  return `<div class="checklist-row"><input type="text" name="checklist_item" placeholder="Ej. Revisar nivel de aceite" value="${escapeHtml(desc || '')}"><button type="button" class="btn btn-secondary btn-sm remove-checklist-row">✕</button></div>`;
+}
+
+function openScheduleForm(schedule) {
+  const isEdit = !!schedule;
+  const checklistItems = schedule?.checklist?.length ? schedule.checklist.map(c => c.description) : [''];
+
+  openModal(isEdit ? 'Editar programación' : 'Nueva programación de mantenimiento preventivo', `
+    <form id="schedForm">
+      <div class="field">
+        <label>Máquina, herramienta o proceso</label>
+        <select name="tool_id" ${isEdit ? 'disabled' : ''} required>
+          <option value="">Selecciona...</option>
+          ${toolOptionsHtml(schedule?.tool_id)}
+        </select>
+      </div>
+      <div class="field"><label>Tipo de mantenimiento</label><input name="maintenance_type" required placeholder="Calibración, lubricación, limpieza..." value="${escapeHtml(schedule?.maintenance_type || '')}"></div>
+      <div class="field-row">
+        <div class="field"><label>Frecuencia (días)</label><input name="frequency_days" type="number" min="1" required value="${schedule?.frequency_days || 30}"></div>
+        <div class="field"><label>Alertar con anticipación (días)</label><input name="alert_days_before" type="number" min="0" required value="${schedule?.alert_days_before ?? 7}"></div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Técnico asignado</label>
+          <select name="assigned_technician_id">
+            <option value="">— Sin asignar —</option>
+            ${technicianOptionsHtml(schedule?.assigned_technician_id)}
+          </select>
+        </div>
+        <div class="field">
+          <label>Turno</label>
+          <select name="shift">${shiftOptionsHtml(schedule?.shift)}</select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Última realizada</label><input name="last_done_date" type="date" value="${fmtDate(schedule?.last_done_date) === '—' ? '' : fmtDate(schedule?.last_done_date)}"></div>
+        ${isEdit ? `<div class="field"><label>Próxima fecha</label><input name="next_due_date" type="date" value="${fmtDate(schedule.next_due_date)}"></div>` : ''}
+      </div>
+      ${isEdit ? `<div class="field"><label><input type="checkbox" name="active" value="1" style="width:auto;display:inline-block;margin-right:6px;" ${schedule.active ? 'checked' : ''}> Programación activa</label></div>` : ''}
+      <div class="field"><label>Notas</label><textarea name="notes">${escapeHtml(schedule?.notes || '')}</textarea></div>
+
+      <div class="field">
+        <label>Checklist a realizar</label>
+        <div class="checklist-builder" id="checklistBuilder">${checklistItems.map(checklistRowHtml).join('')}</div>
+        <button type="button" class="btn btn-secondary btn-sm" id="btnAddChecklistRow">+ Agregar ítem</button>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" id="schedCancel">Cancelar</button>
+        <button type="submit" class="btn btn-primary">${isEdit ? 'Guardar cambios' : 'Crear'}</button>
+      </div>
+    </form>
+  `);
+
+  document.getElementById('btnAddChecklistRow').addEventListener('click', () => {
+    document.getElementById('checklistBuilder').insertAdjacentHTML('beforeend', checklistRowHtml(''));
+  });
+  document.getElementById('checklistBuilder').addEventListener('click', (e) => {
+    const rm = e.target.closest('.remove-checklist-row');
+    if (rm) rm.closest('.checklist-row').remove();
+  });
+
+  document.getElementById('schedCancel').addEventListener('click', closeModal);
+  document.getElementById('schedForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const payload = Object.fromEntries(new FormData(form).entries());
+    if (isEdit) payload.active = form.elements.active && form.elements.active.checked ? 1 : 0;
+    payload.checklist = Array.from(form.querySelectorAll('[name="checklist_item"]')).map(el => el.value.trim()).filter(Boolean);
+    try {
+      if (isEdit) await api('PUT', `/api/maintenance/schedules/${schedule.id}`, payload);
+      else await api('POST', '/api/maintenance/schedules', payload);
+      toast(isEdit ? 'Programación actualizada' : 'Programación creada');
+      closeModal();
+      await loadSchedules();
+    } catch (err) { toast(err.message, true); }
+  });
+}
+
+async function loadLogs() {
+  const rows = await api('GET', '/api/maintenance/logs?limit=50');
+  document.getElementById('logsBody').innerHTML = rows.length ? rows.map(l => `
+    <tr>
+      <td>${escapeHtml(l.tool_code)} — ${escapeHtml(l.tool_name)}</td>
+      <td>${escapeHtml(l.maintenance_type)}</td>
+      <td>${escapeHtml(l.technician_name || '—')}</td>
+      <td>${escapeHtml(l.shift || '—')}</td>
+      <td class="mono">${fmtDate(l.performed_date)}</td>
+      <td>${onTimeBadge(l.on_time)}</td>
+      <td class="row-actions"><button class="btn btn-danger btn-sm" data-action="delete-log" data-id="${l.id}">Eliminar</button></td>
+    </tr>`).join('') : `<tr class="empty-row"><td colspan="7">Sin mantenimientos registrados.</td></tr>`;
+}
+
+document.getElementById('logsBody').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-action="delete-log"]');
+  if (!btn) return;
+  if (!confirm('¿Eliminar este registro de mantenimiento?')) return;
+  await api('DELETE', `/api/maintenance/logs/${btn.dataset.id}`);
+  toast('Registro eliminado');
+  await loadLogs();
+});
+
+document.getElementById('btnNewLog').addEventListener('click', () => openLogForm());
+
+function renderLogChecklist(items) {
+  const container = document.getElementById('logChecklistContainer');
+  if (!items || !items.length) {
+    container.innerHTML = '<p class="muted" style="font-size:0.8rem;">Esta programación no tiene checklist definido, o no seleccionaste una programación.</p>';
+    return;
+  }
+  container.innerHTML = `<div class="checklist-run">${items.map(it => `
+    <div class="checklist-run-item" data-item-id="${it.id}" data-desc="${escapeHtml(it.description)}">
+      <label class="chk"><input type="checkbox" class="chk-completed" checked> ${escapeHtml(it.description)}</label>
+      <input type="text" class="chk-notes" placeholder="Notas (opcional)">
+    </div>`).join('')}</div>`;
+}
+
+async function openLogForm() {
+  openModal('Registrar mantenimiento realizado', `
+    <form id="logForm">
+      <div class="field">
+        <label>Máquina, herramienta o proceso</label>
+        <select name="tool_id" id="logToolSelect" required>
+          <option value="">Selecciona...</option>
+          ${toolOptionsHtml()}
+        </select>
+      </div>
+      <div class="field">
+        <label>Programación relacionada (opcional — actualiza la próxima fecha y trae el checklist)</label>
+        <select name="schedule_id" id="logScheduleSelect"><option value="">— Ninguna —</option></select>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Tipo de mantenimiento</label><input name="maintenance_type" required placeholder="Calibración, lubricación..." id="logTypeInput"></div>
+        <div class="field"><label>Fecha realizada</label><input name="performed_date" type="date" value="${todayStr()}"></div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Técnico</label>
+          <select name="technician_id" id="logTechnicianSelect">
+            <option value="">— Sin asignar —</option>
+            ${technicianOptionsHtml()}
+          </select>
+        </div>
+        <div class="field">
+          <label>Turno</label>
+          <select name="shift" id="logShiftSelect">${shiftOptionsHtml()}</select>
+        </div>
+      </div>
+      <div class="field"><label>Descripción</label><textarea name="description"></textarea></div>
+      <div class="field"><label>Repuestos / partes usadas</label><textarea name="parts_used"></textarea></div>
+
+      <div class="field">
+        <label>Checklist realizado</label>
+        <div id="logChecklistContainer"></div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" id="logCancel">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>
+  `);
+
+  renderLogChecklist(null);
+  document.getElementById('logCancel').addEventListener('click', closeModal);
+
+  document.getElementById('logToolSelect').addEventListener('change', async (e) => {
+    const toolId = e.target.value;
+    const schedSel = document.getElementById('logScheduleSelect');
+    schedSel.innerHTML = '<option value="">— Ninguna —</option>';
+    renderLogChecklist(null);
+    if (!toolId) return;
+    const scheds = await api('GET', `/api/tools/${toolId}/schedules`);
+    scheds.filter(s => s.active).forEach(s => {
+      schedSel.innerHTML += `<option value="${s.id}" data-type="${escapeHtml(s.maintenance_type)}" data-tech="${s.assigned_technician_id || ''}" data-shift="${escapeHtml(s.shift || '')}">${escapeHtml(s.maintenance_type)} (vence ${fmtDate(s.next_due_date)})</option>`;
+    });
+  });
+
+  document.getElementById('logScheduleSelect').addEventListener('change', async (e) => {
+    const opt = e.target.selectedOptions[0];
+    if (!opt || !opt.value) { renderLogChecklist(null); return; }
+    if (opt.dataset.type) document.getElementById('logTypeInput').value = opt.dataset.type;
+    if (opt.dataset.tech) document.getElementById('logTechnicianSelect').value = opt.dataset.tech;
+    if (opt.dataset.shift) document.getElementById('logShiftSelect').value = opt.dataset.shift;
+    const detail = await api('GET', `/api/maintenance/schedules/${opt.value}`);
+    renderLogChecklist(detail.checklist);
+  });
+
+  document.getElementById('logForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = Object.fromEntries(new FormData(e.target).entries());
+    if (!payload.schedule_id) delete payload.schedule_id;
+    payload.checklist = Array.from(document.querySelectorAll('#logChecklistContainer .checklist-run-item')).map(row => ({
+      checklist_item_id: Number(row.dataset.itemId),
+      description: row.dataset.desc,
+      completed: row.querySelector('.chk-completed').checked,
+      notes: row.querySelector('.chk-notes').value.trim() || undefined
+    }));
+    try {
+      await api('POST', '/api/maintenance/logs', payload);
+      toast('Mantenimiento registrado');
+      closeModal();
+      await loadLogs();
+      await loadSchedules();
+    } catch (err) { toast(err.message, true); }
+  });
+}
+
+/* ======================== CONFIG (técnicos / líneas) ======================== */
+
+let configSub = 'technicians';
+
+async function renderConfig() {
+  await loadTechnicians();
+  await loadLines();
+}
+
+document.querySelectorAll('#tab-config .subtabs .subtab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    configSub = btn.dataset.csub;
+    document.querySelectorAll('#tab-config .subtabs .subtab-btn').forEach(b => b.classList.toggle('active', b === btn));
+    document.getElementById('csub-technicians').classList.toggle('hidden', configSub !== 'technicians');
+    document.getElementById('csub-lines').classList.toggle('hidden', configSub !== 'lines');
+  });
+});
+
+async function loadTechnicians() {
+  const rows = await api('GET', '/api/technicians');
+  document.getElementById('techniciansBody').innerHTML = rows.length ? rows.map(t => `
+    <tr>
+      <td>${escapeHtml(t.name)}</td>
+      <td>${escapeHtml(t.area || '—')}</td>
+      <td>${t.active ? '<span class="badge badge-activo">Activo</span>' : '<span class="badge">Inactivo</span>'}</td>
+      <td class="row-actions">
+        <button class="btn btn-secondary btn-sm" data-action="edit-tech" data-id="${t.id}">Editar</button>
+        <button class="btn btn-danger btn-sm" data-action="delete-tech" data-id="${t.id}">Eliminar</button>
+      </td>
+    </tr>`).join('') : `<tr class="empty-row"><td colspan="4">Sin técnicos registrados.</td></tr>`;
+}
+
+document.getElementById('btnNewTechnician').addEventListener('click', () => openTechnicianForm(null));
+document.getElementById('techniciansBody').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-action]');
+  if (!btn) return;
+  if (btn.dataset.action === 'edit-tech') {
+    const rows = await api('GET', '/api/technicians');
+    openTechnicianForm(rows.find(r => String(r.id) === String(btn.dataset.id)));
+  } else if (btn.dataset.action === 'delete-tech') {
+    if (!confirm('¿Eliminar este técnico? Las programaciones que lo tenían asignado quedarán sin técnico.')) return;
+    await api('DELETE', `/api/technicians/${btn.dataset.id}`);
+    toast('Técnico eliminado');
+    await loadTechnicians();
+  }
+});
+
+function openTechnicianForm(tech) {
+  const isEdit = !!tech;
+  openModal(isEdit ? 'Editar técnico' : 'Nuevo técnico de manufactura', `
+    <form id="techForm">
+      <div class="field"><label>Nombre</label><input name="name" required value="${escapeHtml(tech?.name || '')}"></div>
+      <div class="field"><label>Área</label><input name="area" placeholder="Manufactura, Mantenimiento..." value="${escapeHtml(tech?.area || '')}"></div>
+      ${isEdit ? `<div class="field"><label><input type="checkbox" name="active" value="1" style="width:auto;display:inline-block;margin-right:6px;" ${tech.active ? 'checked' : ''}> Técnico activo</label></div>` : ''}
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" id="techCancel">Cancelar</button>
+        <button type="submit" class="btn btn-primary">${isEdit ? 'Guardar cambios' : 'Crear'}</button>
+      </div>
+    </form>
+  `);
+  document.getElementById('techCancel').addEventListener('click', closeModal);
+  document.getElementById('techForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const payload = Object.fromEntries(new FormData(form).entries());
+    if (isEdit) payload.active = form.elements.active && form.elements.active.checked ? 1 : 0;
+    try {
+      if (isEdit) await api('PUT', `/api/technicians/${tech.id}`, payload);
+      else await api('POST', '/api/technicians', payload);
+      toast(isEdit ? 'Técnico actualizado' : 'Técnico creado');
+      closeModal();
+      await loadTechnicians();
+    } catch (err) { toast(err.message, true); }
+  });
+}
+
+async function loadLines() {
+  const [lines, tools] = await Promise.all([api('GET', '/api/lines'), api('GET', '/api/tools')]);
+  document.getElementById('linesBody').innerHTML = lines.length ? lines.map(l => {
+    const count = tools.filter(t => String(t.assembly_line_id) === String(l.id)).length;
+    return `
+    <tr>
+      <td>${escapeHtml(l.name)}</td>
+      <td>${count}</td>
+      <td class="row-actions">
+        <button class="btn btn-secondary btn-sm" data-action="edit-line" data-id="${l.id}">Editar</button>
+        <button class="btn btn-danger btn-sm" data-action="delete-line" data-id="${l.id}">Eliminar</button>
+      </td>
+    </tr>`;
+  }).join('') : `<tr class="empty-row"><td colspan="3">Sin líneas de ensamble registradas.</td></tr>`;
+}
+
+document.getElementById('btnNewLine').addEventListener('click', () => openLineForm(null));
+document.getElementById('linesBody').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-action]');
+  if (!btn) return;
+  if (btn.dataset.action === 'edit-line') {
+    const rows = await api('GET', '/api/lines');
+    openLineForm(rows.find(r => String(r.id) === String(btn.dataset.id)));
+  } else if (btn.dataset.action === 'delete-line') {
+    if (!confirm('¿Eliminar esta línea? Las herramientas asignadas quedarán sin línea.')) return;
+    await api('DELETE', `/api/lines/${btn.dataset.id}`);
+    toast('Línea eliminada');
+    await loadLines();
+  }
+});
+
+function openLineForm(line) {
+  const isEdit = !!line;
+  openModal(isEdit ? 'Editar línea de ensamble' : 'Nueva línea de ensamble', `
+    <form id="lineForm">
+      <div class="field"><label>Nombre</label><input name="name" required value="${escapeHtml(line?.name || '')}" placeholder="Ej. Línea 1, Ensamble Final..."></div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" id="lineCancel">Cancelar</button>
+        <button type="submit" class="btn btn-primary">${isEdit ? 'Guardar cambios' : 'Crear'}</button>
+      </div>
+    </form>
+  `);
+  document.getElementById('lineCancel').addEventListener('click', closeModal);
+  document.getElementById('lineForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = Object.fromEntries(new FormData(e.target).entries());
+    try {
+      if (isEdit) await api('PUT', `/api/lines/${line.id}`, payload);
+      else await api('POST', '/api/lines', payload);
+      toast(isEdit ? 'Línea actualizada' : 'Línea creada');
+      closeModal();
+      await loadLines();
+    } catch (err) { toast(err.message, true); }
+  });
+}
+
+/* ======================== Utils ======================== */
+
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+/* ======================== Init ======================== */
+
+goToTab('dashboard');
+refreshNotifBadge().catch(() => {});
+setInterval(() => refreshNotifBadge().catch(() => {}), 45000);
+
+/* ======================================================================
+   EXTRAS SOLO DE LA VISTA PREVIA (no existen en public/js/app.js): el
+   botón de reinicio de datos de ejemplo.
+   ====================================================================== */
+
+document.getElementById('btnResetDemo').addEventListener('click', () => {
+  if (!confirm('¿Reiniciar los datos de ejemplo? Se perderá lo que hayas capturado en esta demo.')) return;
+  resetDemo();
+  toast('Demo reiniciada');
+  goToTab('dashboard');
+});
+</script>
+</body>
+</html>
