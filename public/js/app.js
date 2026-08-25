@@ -96,9 +96,14 @@ const renderers = {
   tools: renderTools,
   maintenance: renderMaintenance
 };
+const pageMeta = {
+  dashboard: { title: 'Dashboard', sub: 'Estado general del herramental de proceso' },
+  tools: { title: 'Herramientas', sub: 'Inventario de moldes, troqueles, calibres y plantillas' },
+  maintenance: { title: 'Mantenimiento', sub: 'Programación y bitácora de mantenimiento del herramental' }
+};
 
-document.getElementById('mainTabs').addEventListener('click', (e) => {
-  const btn = e.target.closest('.tab-btn');
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.nav-item[data-tab]');
   if (!btn) return;
   goToTab(btn.dataset.tab);
 });
@@ -107,26 +112,43 @@ function goToTab(tab) {
   tabs.forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
   });
-  document.querySelectorAll('#mainTabs .tab-btn').forEach(b => {
+  document.querySelectorAll('.nav-item[data-tab]').forEach(b => {
     b.classList.toggle('active', b.dataset.tab === tab);
   });
+  const meta = pageMeta[tab];
+  document.getElementById('pageTitle').textContent = meta.title;
+  document.getElementById('pageSub').textContent = meta.sub;
   renderers[tab]().catch(err => toast(err.message, true));
 }
 
 /* ======================== DASHBOARD ======================== */
 
+const ICONS = {
+  box: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line>',
+  check: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 17"></polyline>',
+  tool: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>',
+  x: '<circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line>',
+  alert: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>',
+  clock: '<circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>'
+};
+function icon(name) {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg>`;
+}
+function statTile(cls, iconName, value, label) {
+  return `<div class="stat-tile ${cls}"><div class="icon">${icon(iconName)}</div><div><div class="n">${value}</div><div class="l">${label}</div></div></div>`;
+}
+
 async function renderDashboard() {
   const s = await api('GET', '/api/dashboard/summary');
 
   const counts = s.tool_counts || {};
-  document.getElementById('statGrid').innerHTML = `
-    <div class="stat-tile"><div class="n">${s.total_tools}</div><div class="l">Herramientas</div></div>
-    <div class="stat-tile good"><div class="n">${counts.activo || 0}</div><div class="l">Activas</div></div>
-    <div class="stat-tile warn"><div class="n">${counts.en_mantenimiento || 0}</div><div class="l">En mantenimiento</div></div>
-    <div class="stat-tile bad"><div class="n">${counts.baja || 0}</div><div class="l">Baja</div></div>
-    <div class="stat-tile bad"><div class="n">${s.overdue_count}</div><div class="l">Vencidas</div></div>
-    <div class="stat-tile warn"><div class="n">${s.upcoming_count}</div><div class="l">Próx. 7 días</div></div>
-  `;
+  document.getElementById('statGrid').innerHTML =
+    statTile('', 'box', s.total_tools, 'Herramientas') +
+    statTile('good', 'check', counts.activo || 0, 'Activas') +
+    statTile('warn', 'tool', counts.en_mantenimiento || 0, 'En mantenimiento') +
+    statTile('bad', 'x', counts.baja || 0, 'Baja') +
+    statTile('bad', 'alert', s.overdue_count, 'Vencidas') +
+    statTile('warn', 'clock', s.upcoming_count, 'Próx. 7 días');
 
   document.getElementById('overdueBody').innerHTML = s.overdue.length ? s.overdue.map(r => `
     <tr>
@@ -134,7 +156,7 @@ async function renderDashboard() {
       <td>${escapeHtml(r.maintenance_type)}</td>
       <td class="mono">${fmtDate(r.next_due_date)}</td>
       <td>${r.frequency_days} días</td>
-    </tr>`).join('') : `<tr class="empty-row"><td colspan="4">Sin mantenimientos vencidos 🎉</td></tr>`;
+    </tr>`).join('') : `<tr class="empty-row"><td colspan="4">Sin mantenimientos vencidos</td></tr>`;
 
   document.getElementById('upcomingBody').innerHTML = s.upcoming.length ? s.upcoming.map(r => `
     <tr>
