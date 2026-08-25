@@ -1,20 +1,31 @@
 # Mantenimiento de Tooling de Proceso
 
-Aplicación web para gestionar el mantenimiento del herramental de proceso
-(moldes, troqueles, calibres, plantillas, etc.): inventario, programación de
-mantenimiento preventivo y bitácora de intervenciones realizadas.
+Aplicación web para gestionar el mantenimiento preventivo del herramental de
+proceso: máquinas, herramientas y procesos, con programación por frecuencia,
+técnico asignado, línea de ensamble y turno, checklist de ejecución, alertas
+de vencimiento y un dashboard interactivo.
 
 ## Funcionalidad
 
-- **Dashboard**: resumen del estado del herramental, mantenimientos vencidos
-  y próximos (7 días), y mantenimientos recientes.
-- **Herramientas**: inventario con código, nombre, tipo, ubicación y estado
-  (activo / en mantenimiento / baja). Cada herramienta tiene una vista de
+- **Dashboard**: KPIs (activos, vencidas, próximas a vencer, cumplimiento a
+  90 días), gráfico de estado de mantenimiento por línea de ensamble,
+  filtros por línea y técnico, tablas de vencidos/próximos/recientes.
+- **Herramientas**: inventario de máquinas, herramientas, procesos y equipos
+  — código, categoría, línea de ensamble, ubicación y estado. Vista de
   detalle con sus programaciones y bitácora.
-- **Mantenimiento**: programaciones recurrentes (tipo, frecuencia en días,
-  próxima fecha) y bitácora de mantenimientos realizados. Registrar un
-  mantenimiento contra una programación actualiza automáticamente su
-  próxima fecha de vencimiento.
+- **Mantenimiento**:
+  - *Programaciones*: tipo, frecuencia en días, técnico asignado, turno,
+    anticipación de alerta configurable y checklist de ítems a realizar.
+  - *Bitácora*: registro de cada mantenimiento con técnico, turno, y el
+    checklist marcado ítem por ítem (con notas). Registrar contra una
+    programación recalcula automáticamente su próxima fecha y marca si se
+    hizo a tiempo o tarde.
+- **Configuración**: gestión de técnicos de manufactura y líneas de
+  ensamble, usados en los formularios y filtros de todo el sistema.
+- **Notificaciones**: centro de alertas (campana con contador) que genera
+  avisos de mantenimientos vencidos y próximos a vencer según la fecha y la
+  anticipación configurada por programación. No envía correo/SMS — ver
+  Notas.
 
 ## Stack
 
@@ -42,28 +53,43 @@ npm run dev
 ## Estructura
 
 ```
-server.js              Punto de entrada Express
-db/database.js         Conexión SQLite + esquema
-routes/tools.js         API de herramientas (inventario)
-routes/maintenance.js   API de programaciones y bitácora de mantenimiento
-routes/dashboard.js     API de resumen para el dashboard
-public/                 Frontend (index.html, css/, js/)
+server.js                  Punto de entrada Express
+db/database.js             Conexión SQLite + esquema
+routes/tools.js             API de activos (máquinas/herramientas/procesos)
+routes/technicians.js       API de técnicos de manufactura
+routes/lines.js              API de líneas de ensamble
+routes/maintenance.js        API de programaciones (+ checklist) y bitácora
+routes/notifications.js      API de notificaciones (generación + lectura)
+routes/dashboard.js          API de resumen y desglose por línea
+public/                      Frontend (index.html, css/, js/)
 ```
 
 ## API (resumen)
 
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET/POST | `/api/tools` | Listar / crear herramientas |
-| GET/PUT/DELETE | `/api/tools/:id` | Detalle / editar / eliminar herramienta |
-| GET | `/api/tools/lookup/:code` | Buscar herramienta por código |
-| GET | `/api/tools/:id/schedules` \| `/logs` | Programaciones / bitácora de una herramienta |
-| GET/POST | `/api/maintenance/schedules` | Programaciones de mantenimiento |
-| PUT/DELETE | `/api/maintenance/schedules/:id` | Editar / eliminar programación |
-| GET/POST | `/api/maintenance/logs` | Bitácora de mantenimiento |
-| GET | `/api/dashboard/summary` | Resumen para el dashboard |
+| GET/POST | `/api/tools` | Listar / crear activos |
+| GET/PUT/DELETE | `/api/tools/:id` | Detalle / editar / eliminar activo |
+| GET | `/api/tools/lookup/:code` | Buscar activo por código |
+| GET | `/api/tools/:id/schedules` \| `/logs` | Programaciones / bitácora de un activo |
+| GET/POST | `/api/technicians` | Listar / crear técnicos |
+| PUT/DELETE | `/api/technicians/:id` | Editar / eliminar técnico |
+| GET/POST | `/api/lines` | Listar / crear líneas de ensamble |
+| PUT/DELETE | `/api/lines/:id` | Editar / eliminar línea |
+| GET/POST | `/api/maintenance/schedules` | Programaciones (con checklist embebido) |
+| GET/PUT/DELETE | `/api/maintenance/schedules/:id` | Detalle / editar / eliminar programación |
+| GET/POST | `/api/maintenance/logs` | Bitácora (con checklist completado embebido) |
+| GET/DELETE | `/api/maintenance/logs/:id` | Detalle / eliminar registro |
+| GET | `/api/notifications` | Notificaciones (genera nuevas automáticamente) |
+| GET | `/api/notifications/count` | Contador de no leídas |
+| POST | `/api/notifications/:id/read` \| `/read-all` | Marcar leídas |
+| GET | `/api/dashboard/summary` | Resumen con filtros por línea/técnico |
+| GET | `/api/dashboard/by-line` | Desglose de estado por línea (gráfico) |
 
 ## Notas
 
 - La base de datos SQLite es de archivo único; para uso multiusuario en red
   basta con correr el servidor en una máquina accesible por la red local.
+- Las notificaciones son un centro **dentro de la app** (no se envía correo
+  ni SMS). Conectar un canal externo real requeriría credenciales de un
+  servicio de correo/SMS (ej. SMTP) que no están configuradas aquí.
