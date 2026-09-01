@@ -10,67 +10,15 @@
 
 <div class="app-shell">
 
-  <!-- ============ SIDEBAR (desktop) ============ -->
-  <aside class="sidebar">
-    <div class="sidebar-brand">
-      <div class="mark">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+  <!-- ============ TOP APP BAR (estilo Microsoft 365) ============ -->
+  <header class="ms-topbar">
+    <div class="ms-topbar-left">
+      <div class="waffle" aria-hidden="true">
+        <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="3" cy="3" r="1.7"></circle><circle cx="10" cy="3" r="1.7"></circle><circle cx="17" cy="3" r="1.7"></circle><circle cx="3" cy="10" r="1.7"></circle><circle cx="10" cy="10" r="1.7"></circle><circle cx="17" cy="10" r="1.7"></circle><circle cx="3" cy="17" r="1.7"></circle><circle cx="10" cy="17" r="1.7"></circle><circle cx="17" cy="17" r="1.7"></circle></svg>
       </div>
-      <div>
-        <div class="name">TOOLMAINT</div>
-        <div class="tagline">Gestión de herramental</div>
-      </div>
+      <span class="ms-appname">TOOLMAINT</span>
     </div>
-
-    <nav class="sidebar-nav" id="mainTabs">
-      <button class="nav-item active" data-tab="dashboard">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-        Dashboard
-      </button>
-      <button class="nav-item" data-tab="tools">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-        Herramientas
-      </button>
-      <button class="nav-item" data-tab="maintenance">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
-        Mantenimiento
-      </button>
-      <button class="nav-item" data-tab="config">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>
-        Configuración
-      </button>
-    </nav>
-
-    <div class="sidebar-footer">TOOLMAINT · Uso interno</div>
-  </aside>
-
-  <div class="app-main">
-
-    <!-- ============ TOP NAV (mobile) ============ -->
-    <nav class="mobile-tabs" id="mobileTabs">
-      <button class="nav-item active" data-tab="dashboard">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-        Dashboard
-      </button>
-      <button class="nav-item" data-tab="tools">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-        Herramientas
-      </button>
-      <button class="nav-item" data-tab="maintenance">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
-        Mantenimiento
-      </button>
-      <button class="nav-item" data-tab="config">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>
-        Config.
-      </button>
-    </nav>
-
-    <header class="topbar">
-      <div>
-        <h2 id="pageTitle">Dashboard</h2>
-        <div class="sub" id="pageSub">Estado general del herramental de proceso</div>
-      </div>
+    <div class="ms-topbar-right">
       <div class="notif-wrap">
         <button class="icon-btn" id="btnNotifBell" aria-label="Notificaciones" aria-haspopup="true">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
@@ -84,201 +32,261 @@
           <div id="notifList"></div>
         </div>
       </div>
-    </header>
+    </div>
+  </header>
 
-    <main class="content">
+  <div class="ms-body">
 
-      <!-- ============ DASHBOARD ============ -->
-      <section id="tab-dashboard" class="tab-panel">
-        <div class="filters-row">
-          <div class="field">
-            <label>Línea de ensamble</label>
-            <select id="dashLineFilter"><option value="">Todas</option></select>
-          </div>
-          <div class="field">
-            <label>Técnico</label>
-            <select id="dashTechFilter"><option value="">Todos</option></select>
-          </div>
-        </div>
+    <!-- ============ SIDEBAR (desktop) ============ -->
+    <aside class="sidebar">
+      <nav class="sidebar-nav" id="mainTabs">
+        <button class="nav-item active" data-tab="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          Dashboard
+        </button>
+        <button class="nav-item" data-tab="tools">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+          Herramientas
+        </button>
+        <button class="nav-item" data-tab="maintenance">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+          Mantenimiento
+        </button>
+        <button class="nav-item" data-tab="config">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>
+          Configuración
+        </button>
+      </nav>
 
-        <div class="stat-grid" id="statGrid"></div>
+      <div class="sidebar-footer">TOOLMAINT · Uso interno</div>
+    </aside>
 
-        <div class="card">
-          <div class="card-header"><span class="card-title">Estado de mantenimiento por línea</span></div>
-          <div class="card-body">
-            <div id="lineChart"></div>
-          </div>
-        </div>
+    <div class="app-main">
 
-        <div class="card">
-          <div class="card-header"><span class="card-title">Mantenimientos vencidos</span></div>
-          <div class="card-body table-wrap">
-            <table><thead><tr><th>Herramienta</th><th>Tipo</th><th>Línea</th><th>Técnico</th><th>Venció</th></tr></thead>
-            <tbody id="overdueBody"></tbody></table>
-          </div>
-        </div>
+      <!-- ============ TOP NAV (mobile) ============ -->
+      <nav class="mobile-tabs" id="mobileTabs">
+        <button class="nav-item active" data-tab="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          Dashboard
+        </button>
+        <button class="nav-item" data-tab="tools">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+          Herramientas
+        </button>
+        <button class="nav-item" data-tab="maintenance">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+          Mantenimiento
+        </button>
+        <button class="nav-item" data-tab="config">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>
+          Config.
+        </button>
+      </nav>
 
-        <div class="card">
-          <div class="card-header"><span class="card-title">Próximos a vencer</span></div>
-          <div class="card-body table-wrap">
-            <table><thead><tr><th>Herramienta</th><th>Tipo</th><th>Línea</th><th>Técnico</th><th>Vence</th></tr></thead>
-            <tbody id="upcomingBody"></tbody></table>
-          </div>
-        </div>
+      <div class="page-header">
+        <h2 id="pageTitle">Dashboard</h2>
+        <div class="sub" id="pageSub">Estado general del herramental de proceso</div>
+      </div>
 
-        <div class="card">
-          <div class="card-header"><span class="card-title">Mantenimientos recientes</span></div>
-          <div class="card-body table-wrap">
-            <table><thead><tr><th>Herramienta</th><th>Tipo</th><th>Técnico</th><th>Fecha</th><th>A tiempo</th></tr></thead>
-            <tbody id="dashLogBody"></tbody></table>
-          </div>
-        </div>
-      </section>
+      <main class="content">
 
-      <!-- ============ TOOLS ============ -->
-      <section id="tab-tools" class="tab-panel hidden">
-        <div class="filters-row">
-          <div class="field">
-            <label>Buscar</label>
-            <input type="text" id="toolSearch" placeholder="Código, nombre, tipo, ubicación...">
-          </div>
-          <div class="field">
-            <label>Categoría</label>
-            <select id="toolCategoryFilter">
-              <option value="">Todas</option>
-              <option value="maquina">Máquina</option>
-              <option value="herramienta">Herramienta</option>
-              <option value="proceso">Proceso</option>
-              <option value="equipo">Equipo</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Estado</label>
-            <select id="toolStatusFilter">
-              <option value="">Todos</option>
-              <option value="activo">Activo</option>
-              <option value="en_mantenimiento">En mantenimiento</option>
-              <option value="baja">Baja</option>
-            </select>
-          </div>
-          <button class="btn btn-primary" id="btnNewTool">+ Nueva herramienta</button>
-        </div>
+        <!-- ============ DASHBOARD ============ -->
+        <section id="tab-dashboard" class="tab-panel">
 
-        <div class="card">
-          <div class="card-body table-wrap">
-            <table>
-              <thead><tr><th>Código</th><th>Nombre</th><th>Categoría</th><th>Línea</th><th>Estado</th><th></th></tr></thead>
-              <tbody id="toolsBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Tool detail -->
-        <div class="card hidden" id="toolDetailCard">
-          <div class="card-header">
-            <span class="card-title" id="toolDetailTitle">Detalle</span>
-            <button class="btn btn-secondary btn-sm" id="btnCloseToolDetail">Cerrar</button>
-          </div>
-          <div class="card-body">
-            <div id="toolDetailMeta" class="detail-meta"></div>
-            <div class="subtabs">
-              <button class="subtab-btn active" data-sub="sched">Programaciones</button>
-              <button class="subtab-btn" data-sub="log">Bitácora</button>
+          <!-- Panel principal: requeridos vs. realizados por línea, con alertas -->
+          <div class="card">
+            <div class="card-header pm-panel-head">
+              <span class="card-title">Mantenimientos preventivos por línea</span>
+              <span class="period" id="pmPeriod"></span>
             </div>
-            <div id="toolDetailBody"></div>
+            <div class="card-body">
+              <div id="pmPanel"></div>
+            </div>
           </div>
-        </div>
-      </section>
 
-      <!-- ============ MAINTENANCE ============ -->
-      <section id="tab-maintenance" class="tab-panel hidden">
-        <div class="subtabs">
-          <button class="subtab-btn active" data-msub="schedules">Programaciones</button>
-          <button class="subtab-btn" data-msub="logs">Bitácora</button>
-        </div>
-
-        <div id="msub-schedules">
           <div class="filters-row">
             <div class="field">
-              <label>Filtro</label>
-              <select id="scheduleFilter">
-                <option value="">Todas activas</option>
-                <option value="overdue">Vencidas</option>
-                <option value="upcoming">Próximas a vencer</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>Línea</label>
-              <select id="scheduleLineFilter"><option value="">Todas</option></select>
+              <label>Línea de ensamble</label>
+              <select id="dashLineFilter"><option value="">Todas</option></select>
             </div>
             <div class="field">
               <label>Técnico</label>
-              <select id="scheduleTechFilter"><option value="">Todos</option></select>
-            </div>
-            <button class="btn btn-primary" id="btnNewSchedule">+ Nueva programación</button>
-          </div>
-          <div class="card">
-            <div class="card-body table-wrap">
-              <table>
-                <thead><tr><th>Herramienta</th><th>Tipo</th><th>Línea</th><th>Técnico</th><th>Turno</th><th>Próxima</th><th>Estado</th><th></th></tr></thead>
-                <tbody id="schedulesBody"></tbody>
-              </table>
+              <select id="dashTechFilter"><option value="">Todos</option></select>
             </div>
           </div>
-        </div>
 
-        <div id="msub-logs" class="hidden">
+          <div class="stat-grid" id="statGrid"></div>
+
+          <div class="card">
+            <div class="card-header"><span class="card-title">Mantenimientos vencidos</span></div>
+            <div class="card-body table-wrap">
+              <table><thead><tr><th>Herramienta</th><th>Tipo</th><th>Línea</th><th>Técnico</th><th>Venció</th></tr></thead>
+              <tbody id="overdueBody"></tbody></table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><span class="card-title">Próximos a vencer</span></div>
+            <div class="card-body table-wrap">
+              <table><thead><tr><th>Herramienta</th><th>Tipo</th><th>Línea</th><th>Técnico</th><th>Vence</th></tr></thead>
+              <tbody id="upcomingBody"></tbody></table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><span class="card-title">Mantenimientos recientes</span></div>
+            <div class="card-body table-wrap">
+              <table><thead><tr><th>Herramienta</th><th>Tipo</th><th>Técnico</th><th>Fecha</th><th>A tiempo</th></tr></thead>
+              <tbody id="dashLogBody"></tbody></table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ TOOLS ============ -->
+        <section id="tab-tools" class="tab-panel hidden">
           <div class="filters-row">
-            <button class="btn btn-primary" id="btnNewLog">+ Registrar mantenimiento</button>
+            <div class="field">
+              <label>Buscar</label>
+              <input type="text" id="toolSearch" placeholder="Código, nombre, tipo, ubicación...">
+            </div>
+            <div class="field">
+              <label>Categoría</label>
+              <select id="toolCategoryFilter">
+                <option value="">Todas</option>
+                <option value="maquina">Máquina</option>
+                <option value="herramienta">Herramienta</option>
+                <option value="proceso">Proceso</option>
+                <option value="equipo">Equipo</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Estado</label>
+              <select id="toolStatusFilter">
+                <option value="">Todos</option>
+                <option value="activo">Activo</option>
+                <option value="en_mantenimiento">En mantenimiento</option>
+                <option value="baja">Baja</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="btnNewTool">+ Nueva herramienta</button>
           </div>
+
           <div class="card">
             <div class="card-body table-wrap">
               <table>
-                <thead><tr><th>Herramienta</th><th>Tipo</th><th>Técnico</th><th>Turno</th><th>Fecha</th><th>A tiempo</th><th></th></tr></thead>
-                <tbody id="logsBody"></tbody>
+                <thead><tr><th>Código</th><th>Nombre</th><th>Categoría</th><th>Línea</th><th>Estado</th><th></th></tr></thead>
+                <tbody id="toolsBody"></tbody>
               </table>
             </div>
           </div>
-        </div>
-      </section>
 
-      <!-- ============ CONFIG ============ -->
-      <section id="tab-config" class="tab-panel hidden">
-        <div class="subtabs">
-          <button class="subtab-btn active" data-csub="technicians">Técnicos</button>
-          <button class="subtab-btn" data-csub="lines">Líneas de ensamble</button>
-        </div>
-
-        <div id="csub-technicians">
-          <div class="filters-row">
-            <button class="btn btn-primary" id="btnNewTechnician">+ Nuevo técnico</button>
-          </div>
-          <div class="card">
-            <div class="card-body table-wrap">
-              <table>
-                <thead><tr><th>Nombre</th><th>Área</th><th>Estado</th><th></th></tr></thead>
-                <tbody id="techniciansBody"></tbody>
-              </table>
+          <!-- Tool detail -->
+          <div class="card hidden" id="toolDetailCard">
+            <div class="card-header">
+              <span class="card-title" id="toolDetailTitle">Detalle</span>
+              <button class="btn btn-secondary btn-sm" id="btnCloseToolDetail">Cerrar</button>
+            </div>
+            <div class="card-body">
+              <div id="toolDetailMeta" class="detail-meta"></div>
+              <div class="subtabs">
+                <button class="subtab-btn active" data-sub="sched">Programaciones</button>
+                <button class="subtab-btn" data-sub="log">Bitácora</button>
+              </div>
+              <div id="toolDetailBody"></div>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div id="csub-lines" class="hidden">
-          <div class="filters-row">
-            <button class="btn btn-primary" id="btnNewLine">+ Nueva línea</button>
+        <!-- ============ MAINTENANCE ============ -->
+        <section id="tab-maintenance" class="tab-panel hidden">
+          <div class="subtabs">
+            <button class="subtab-btn active" data-msub="schedules">Programaciones</button>
+            <button class="subtab-btn" data-msub="logs">Bitácora</button>
           </div>
-          <div class="card">
-            <div class="card-body table-wrap">
-              <table>
-                <thead><tr><th>Línea de ensamble</th><th>Herramientas asignadas</th><th></th></tr></thead>
-                <tbody id="linesBody"></tbody>
-              </table>
+
+          <div id="msub-schedules">
+            <div class="filters-row">
+              <div class="field">
+                <label>Filtro</label>
+                <select id="scheduleFilter">
+                  <option value="">Todas activas</option>
+                  <option value="overdue">Vencidas</option>
+                  <option value="upcoming">Próximas a vencer</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Línea</label>
+                <select id="scheduleLineFilter"><option value="">Todas</option></select>
+              </div>
+              <div class="field">
+                <label>Técnico</label>
+                <select id="scheduleTechFilter"><option value="">Todos</option></select>
+              </div>
+              <button class="btn btn-primary" id="btnNewSchedule">+ Nueva programación</button>
+            </div>
+            <div class="card">
+              <div class="card-body table-wrap">
+                <table>
+                  <thead><tr><th>Herramienta</th><th>Tipo</th><th>Línea</th><th>Técnico</th><th>Turno</th><th>Próxima</th><th>Estado</th><th></th></tr></thead>
+                  <tbody id="schedulesBody"></tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
 
-    </main>
+          <div id="msub-logs" class="hidden">
+            <div class="filters-row">
+              <button class="btn btn-primary" id="btnNewLog">+ Registrar mantenimiento</button>
+            </div>
+            <div class="card">
+              <div class="card-body table-wrap">
+                <table>
+                  <thead><tr><th>Herramienta</th><th>Tipo</th><th>Técnico</th><th>Turno</th><th>Fecha</th><th>A tiempo</th><th></th></tr></thead>
+                  <tbody id="logsBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ CONFIG ============ -->
+        <section id="tab-config" class="tab-panel hidden">
+          <div class="subtabs">
+            <button class="subtab-btn active" data-csub="technicians">Técnicos</button>
+            <button class="subtab-btn" data-csub="lines">Líneas de ensamble</button>
+          </div>
+
+          <div id="csub-technicians">
+            <div class="filters-row">
+              <button class="btn btn-primary" id="btnNewTechnician">+ Nuevo técnico</button>
+            </div>
+            <div class="card">
+              <div class="card-body table-wrap">
+                <table>
+                  <thead><tr><th>Nombre</th><th>Área</th><th>Estado</th><th></th></tr></thead>
+                  <tbody id="techniciansBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div id="csub-lines" class="hidden">
+            <div class="filters-row">
+              <button class="btn btn-primary" id="btnNewLine">+ Nueva línea</button>
+            </div>
+            <div class="card">
+              <div class="card-body table-wrap">
+                <table>
+                  <thead><tr><th>Línea de ensamble</th><th>Herramientas asignadas</th><th></th></tr></thead>
+                  <tbody id="linesBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
   </div>
 </div>
 

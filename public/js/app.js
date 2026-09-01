@@ -252,7 +252,7 @@ async function renderDashboard() {
   techSel.onchange = loadDashboard;
 
   await loadDashboard();
-  await renderLineChart();
+  await renderPmPanel();
   await refreshNotifBadge();
 }
 
@@ -302,36 +302,55 @@ async function loadDashboard() {
     </tr>`).join('') : `<tr class="empty-row"><td colspan="5">Sin mantenimientos registrados</td></tr>`;
 }
 
-async function renderLineChart() {
-  const data = await api('GET', '/api/dashboard/by-line');
-  const el = document.getElementById('lineChart');
-  const lines = data.lines.filter(l => l.total > 0);
+function fmtMonthLabel(dateStr) {
+  const [y, m] = dateStr.split('-').map(Number);
+  const names = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  return `${names[m - 1]} ${y}`;
+}
 
+async function renderPmPanel() {
+  const data = await api('GET', '/api/dashboard/by-line');
+  const el = document.getElementById('pmPanel');
+  document.getElementById('pmPeriod').textContent = data.month_start ? fmtMonthLabel(data.month_start) : '';
+
+  const lines = data.lines;
   if (!lines.length) {
-    el.innerHTML = `<div class="line-chart-empty">Todavía no hay programaciones activas asociadas a una línea de ensamble.</div>`;
+    el.innerHTML = `<div class="pm-empty">Todavía no hay líneas de ensamble configuradas. Créalas en Configuración → Líneas de ensamble.</div>`;
     return;
   }
 
-  const maxTotal = Math.max(...lines.map(l => l.total), 1);
-  el.innerHTML = lines.map(l => {
-    const w = (n) => (n / maxTotal * 100).toFixed(1);
+  el.innerHTML = `<div class="pm-grid">${lines.map(l => {
+    const pct = l.required_month > 0 ? Math.round((l.completed_month / l.required_month) * 100) : (l.total === 0 ? null : 100);
+    const pctCls = pct === null ? '' : pct >= 80 ? 'good' : pct >= 50 ? 'warn' : 'bad';
+    const reqW = 100;
+    const compW = l.required_month > 0 ? Math.min(100, (l.completed_month / l.required_month) * 100) : 0;
+
+    const alerts = [];
+    if (l.overdue) alerts.push(`<span class="badge badge-overdue">${l.overdue} vencida${l.overdue > 1 ? 's' : ''}</span>`);
+    if (l.upcoming) alerts.push(`<span class="badge badge-upcoming">${l.upcoming} próxima${l.upcoming > 1 ? 's' : ''}</span>`);
+    if (!l.overdue && !l.upcoming && l.total > 0) alerts.push(`<span class="badge badge-ok">Al día</span>`);
+    if (l.total === 0) alerts.push(`<span class="muted" style="font-size:0.75rem;">Sin programaciones activas</span>`);
+
     return `
-      <div class="line-chart-row">
-        <div class="line-name">${escapeHtml(l.line_name)}</div>
-        <div class="line-bar" style="width:${(l.total / maxTotal * 100).toFixed(1)}%; min-width: 40px;">
-          ${l.overdue ? `<div class="seg-overdue" style="width:${(l.overdue / l.total * 100).toFixed(1)}%"></div>` : ''}
-          ${l.upcoming ? `<div class="seg-upcoming" style="width:${(l.upcoming / l.total * 100).toFixed(1)}%"></div>` : ''}
-          ${l.ok ? `<div class="seg-ok" style="width:${(l.ok / l.total * 100).toFixed(1)}%"></div>` : ''}
+      <div class="pm-card">
+        <div class="pm-card-header">
+          <span class="line-name">${escapeHtml(l.line_name)}</span>
+          ${pct !== null ? `<span class="pct ${pctCls}">${pct}%</span>` : ''}
         </div>
-        <div class="line-total">${l.total} progr.</div>
+        <div class="pm-bar-row">
+          <span class="lbl">Requeridos</span>
+          <div class="pm-bar-track"><div class="pm-bar-fill required" style="width:${reqW}%"></div></div>
+          <span class="val">${l.required_month}</span>
+        </div>
+        <div class="pm-bar-row">
+          <span class="lbl">Realizados</span>
+          <div class="pm-bar-track"><div class="pm-bar-fill completed" style="width:${compW}%"></div></div>
+          <span class="val">${l.completed_month}</span>
+        </div>
+        <div class="pm-alerts">${alerts.join('')}</div>
       </div>`;
-  }).join('') + `
-    <div class="line-chart-legend">
-      <span><span class="sw" style="background:var(--critical)"></span> Vencidas</span>
-      <span><span class="sw" style="background:var(--warning)"></span> Próximas</span>
-      <span><span class="sw" style="background:var(--success)"></span> Al día</span>
-      ${data.unassigned_tools ? `<span>${data.unassigned_tools} herramienta(s) sin línea asignada</span>` : ''}
-    </div>`;
+  }).join('')}</div>
+  ${data.unassigned_tools ? `<div class="pm-empty">${data.unassigned_tools} herramienta(s) sin línea asignada — no aparecen en este panel.</div>` : ''}`;
 }
 
 /* ======================== TOOLS ======================== */

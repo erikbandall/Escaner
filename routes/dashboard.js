@@ -90,32 +90,56 @@ router.get('/summary', (req, res) => {
   });
 });
 
-// GET /api/dashboard/by-line -- para el gráfico de cumplimiento/estado por línea de ensamble
+// GET /api/dashboard/by-line -- panel de mantenimientos preventivos por línea de ensamble:
+// cuántos se requieren este mes vs. cuántos ya se realizaron, más alertas de vencidos/próximos.
+//
+// "Requeridos este mes" = mantenimientos ya realizados este mes para esa programación +
+// 1 más por cada programación activa que siga pendiente (su próxima fecha cae dentro o antes
+// de fin de este mes). Así el número de requeridos nunca baja de lo ya realizado, y crece con
+// cada ciclo pendiente. "Realizados este mes" = registros de bitácora con fecha en este mes.
 router.get('/by-line', (req, res) => {
   const t0 = today();
+  const monthStart = t0.slice(0, 7) + '-01';
+  const [y, m] = t0.slice(0, 7).split('-').map(Number);
+  const monthEnd = new Date(y, m, 0).toISOString().slice(0, 10); // último día del mes actual
+
   const lines = db.prepare('SELECT * FROM assembly_lines ORDER BY name COLLATE NOCASE').all();
+  const completedThisMonth = db.prepare(`
+    SELECT schedule_id, COUNT(*) AS n FROM maintenance_logs
+    WHERE schedule_id IS NOT NULL AND performed_date >= ? AND performed_date <= ?
+    GROUP BY schedule_id
+  `).all(monthStart, monthEnd);
+  const completedMap = new Map(completedThisMonth.map(r => [r.schedule_id, r.n]));
 
   const rows = lines.map(line => {
     const schedules = db.prepare(`
-      SELECT s.next_due_date, s.alert_days_before FROM maintenance_schedules s
+      SELECT s.id, s.next_due_date, s.alert_days_before FROM maintenance_schedules s
       JOIN tools t ON t.id = s.tool_id
       WHERE t.assembly_line_id = ? AND s.active = 1
     `).all(line.id);
 
-    let overdue = 0, upcoming = 0, ok = 0;
+    let overdue = 0, upcoming = 0, ok = 0, requiredMonth = 0, completedMonth = 0;
     schedules.forEach(s => {
       if (s.next_due_date < t0) overdue++;
       else if ((new Date(s.next_due_date) - new Date(t0)) / 86400000 <= s.alert_days_before) upcoming++;
       else ok++;
+
+      const done = completedMap.get(s.id) || 0;
+      const outstanding = s.next_due_date <= monthEnd ? 1 : 0;
+      requiredMonth += done + outstanding;
+      completedMonth += done;
     });
 
-    return { line_id: line.id, line_name: line.name, overdue, upcoming, ok, total: schedules.length };
+    return {
+      line_id: line.id, line_name: line.name, overdue, upcoming, ok, total: schedules.length,
+      required_month: requiredMonth, completed_month: completedMonth
+    };
   });
 
   // Herramientas sin línea asignada, agrupadas aparte para no perderlas del panorama.
   const unassignedTools = db.prepare('SELECT COUNT(*) AS n FROM tools WHERE assembly_line_id IS NULL').get().n;
 
-  res.json({ lines: rows, unassigned_tools: unassignedTools });
+  res.json({ lines: rows, unassigned_tools: unassignedTools, month_start: monthStart, month_end: monthEnd });
 });
 
 module.exports = router;
