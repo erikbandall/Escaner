@@ -1,7 +1,26 @@
 const express = require('express');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
+const multer = require('multer');
 const db = require('../db/database');
 
 const router = express.Router();
+
+const UPLOADS_DIR = path.join(__dirname, '..', 'data', 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOADS_DIR),
+    filename: (req, file, cb) => cb(null, `${crypto.randomUUID()}.pdf`)
+  }),
+  limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype !== 'application/pdf') return cb(new Error('Solo se admiten archivos PDF'));
+    cb(null, true);
+  }
+});
 
 const VALID_SHIFT = ['Turno 1', 'Turno 2', 'Turno 3'];
 
@@ -288,7 +307,63 @@ router.post('/logs', (req, res) => {
 router.delete('/logs/:id', (req, res) => {
   const existing = db.prepare('SELECT * FROM maintenance_logs WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Registro no encontrado' });
+  if (existing.evidence_filename) {
+    fs.unlink(path.join(UPLOADS_DIR, existing.evidence_filename), () => {});
+  }
   db.prepare('DELETE FROM maintenance_logs WHERE id = ?').run(req.params.id);
+  res.status(204).end();
+});
+
+/* -------------------- Evidencia PDF del checklist -------------------- */
+
+// POST /api/maintenance/logs/:id/evidence  (multipart/form-data, campo "evidence")
+router.post('/logs/:id/evidence', (req, res) => {
+  upload.single('evidence')(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message || 'No se pudo subir el archivo' });
+
+    const log = db.prepare('SELECT * FROM maintenance_logs WHERE id = ?').get(req.params.id);
+    if (!log) {
+      if (req.file) fs.unlink(req.file.path, () => {});
+      return res.status(404).json({ error: 'Registro no encontrado' });
+    }
+    if (!req.file) return res.status(400).json({ error: 'Adjunta un archivo PDF' });
+
+    // Si ya había una evidencia previa, se reemplaza.
+    if (log.evidence_filename) {
+      fs.unlink(path.join(UPLOADS_DIR, log.evidence_filename), () => {});
+    }
+
+    db.prepare('UPDATE maintenance_logs SET evidence_filename = ?, evidence_original_name = ? WHERE id = ?')
+      .run(req.file.filename, req.file.originalname, req.params.id);
+
+    res.status(201).json(db.prepare(`
+      SELECT l.*, t.code AS tool_code, t.name AS tool_name, tech.name AS technician_name
+      FROM maintenance_logs l JOIN tools t ON t.id = l.tool_id
+      LEFT JOIN technicians tech ON tech.id = l.technician_id
+      WHERE l.id = ?
+    `).get(req.params.id));
+  });
+});
+
+// GET /api/maintenance/logs/:id/evidence  -- ver/descargar el PDF
+router.get('/logs/:id/evidence', (req, res) => {
+  const log = db.prepare('SELECT * FROM maintenance_logs WHERE id = ?').get(req.params.id);
+  if (!log || !log.evidence_filename) return res.status(404).json({ error: 'Sin evidencia adjunta' });
+  const filePath = path.join(UPLOADS_DIR, log.evidence_filename);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'El archivo ya no está disponible' });
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="${(log.evidence_original_name || 'evidencia.pdf').replace(/"/g, '')}"`);
+  fs.createReadStream(filePath).pipe(res);
+});
+
+// DELETE /api/maintenance/logs/:id/evidence
+router.delete('/logs/:id/evidence', (req, res) => {
+  const log = db.prepare('SELECT * FROM maintenance_logs WHERE id = ?').get(req.params.id);
+  if (!log) return res.status(404).json({ error: 'Registro no encontrado' });
+  if (log.evidence_filename) {
+    fs.unlink(path.join(UPLOADS_DIR, log.evidence_filename), () => {});
+    db.prepare('UPDATE maintenance_logs SET evidence_filename = NULL, evidence_original_name = NULL WHERE id = ?').run(req.params.id);
+  }
   res.status(204).end();
 });
 

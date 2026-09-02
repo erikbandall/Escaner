@@ -19,21 +19,28 @@
   --text: #242424;
   --muted: #616161;
 
-  /* Brand (Microsoft blue) */
-  --brand: #0078d4;
-  --brand-hover: #106ebe;
-  --brand-pressed: #005a9e;
-  --brand-tint: #eff6fc;
-  --brand-tint-2: #deecf9;
+  /* Brand (azul Microsoft, más vívido) */
+  --brand: #2564eb;
+  --brand-hover: #1e4fc4;
+  --brand-pressed: #1839a3;
+  --brand-tint: #eaf0ff;
+  --brand-tint-2: #d6e4ff;
 
-  /* Semantic (kept distinct from the brand accent) */
-  --success: #107c10;
-  --success-bg: #dff6dd;
-  --warning: #9a6700;
-  --warning-bg: #fff4ce;
-  --critical: #d13438;
-  --critical-bg: #fde7e9;
+  /* Semantic (vívidos, distintos del acento de marca) */
+  --success: #12a150;
+  --success-bg: #dffaea;
+  --warning: #e8720c;
+  --warning-bg: #fff1de;
+  --critical: #e1233f;
+  --critical-bg: #ffe4e8;
   --neutral-bg: #f0f0f0;
+
+  /* Paleta viva para gráficas (anillos, barras) */
+  --viz-good: #16c172;
+  --viz-warn: #ffab00;
+  --viz-bad: #ff3b5c;
+  --viz-neutral: #6366f1;
+  --ring-track: #e9e9f2;
 
   --radius: 8px;
   --radius-sm: 4px;
@@ -53,19 +60,25 @@
     --text: #f5f5f5;
     --muted: #c8c6c4;
 
-    --brand: #479ef5;
-    --brand-hover: #62abf5;
-    --brand-pressed: #2886de;
-    --brand-tint: #262d33;
-    --brand-tint-2: #203044;
+    --brand: #6c8fff;
+    --brand-hover: #85a2ff;
+    --brand-pressed: #567de6;
+    --brand-tint: #232a42;
+    --brand-tint-2: #2a3452;
 
-    --success: #6ccb5f;
-    --success-bg: rgba(108, 203, 95, 0.16);
-    --warning: #ffd335;
-    --warning-bg: rgba(255, 211, 53, 0.14);
-    --critical: #ff6a75;
-    --critical-bg: rgba(255, 106, 117, 0.16);
+    --success: #2fe08d;
+    --success-bg: rgba(47, 224, 141, 0.16);
+    --warning: #ffb545;
+    --warning-bg: rgba(255, 181, 69, 0.16);
+    --critical: #ff5c78;
+    --critical-bg: rgba(255, 92, 120, 0.18);
     --neutral-bg: rgba(255, 255, 255, 0.06);
+
+    --viz-good: #2fe08d;
+    --viz-warn: #ffb545;
+    --viz-bad: #ff5c78;
+    --viz-neutral: #8b8cf7;
+    --ring-track: #34324a;
 
     --shadow-card: 0 1.6px 3.6px rgba(0, 0, 0, 0.4);
     --shadow-flyout: 0 6.4px 14.4px rgba(0, 0, 0, 0.4);
@@ -79,19 +92,25 @@
   --text: #f5f5f5;
   --muted: #c8c6c4;
 
-  --brand: #479ef5;
-  --brand-hover: #62abf5;
-  --brand-pressed: #2886de;
-  --brand-tint: #262d33;
-  --brand-tint-2: #203044;
+  --brand: #6c8fff;
+  --brand-hover: #85a2ff;
+  --brand-pressed: #567de6;
+  --brand-tint: #232a42;
+  --brand-tint-2: #2a3452;
 
-  --success: #6ccb5f;
-  --success-bg: rgba(108, 203, 95, 0.16);
-  --warning: #ffd335;
-  --warning-bg: rgba(255, 211, 53, 0.14);
-  --critical: #ff6a75;
-  --critical-bg: rgba(255, 106, 117, 0.16);
+  --success: #2fe08d;
+  --success-bg: rgba(47, 224, 141, 0.16);
+  --warning: #ffb545;
+  --warning-bg: rgba(255, 181, 69, 0.16);
+  --critical: #ff5c78;
+  --critical-bg: rgba(255, 92, 120, 0.18);
   --neutral-bg: rgba(255, 255, 255, 0.06);
+
+  --viz-good: #2fe08d;
+  --viz-warn: #ffb545;
+  --viz-bad: #ff5c78;
+  --viz-neutral: #8b8cf7;
+  --ring-track: #34324a;
 
   --shadow-card: 0 1.6px 3.6px rgba(0, 0, 0, 0.4);
   --shadow-flyout: 0 6.4px 14.4px rgba(0, 0, 0, 0.4);
@@ -255,15 +274,23 @@ main.content { padding: 12px 28px 60px; max-width: 1180px; }
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
   box-shadow: var(--shadow-card); padding: 14px 16px;
   display: flex; align-items: center; gap: 12px;
+  position: relative; overflow: hidden;
+}
+.stat-tile::before {
+  content: ''; position: absolute; inset: 0 0 auto 0; height: 3px;
+  background: linear-gradient(90deg, var(--brand), var(--viz-neutral));
 }
 .stat-tile .icon {
   width: 36px; height: 36px; border-radius: var(--radius-sm); flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  background: var(--neutral-bg); color: var(--brand);
+  background: var(--brand-tint); color: var(--brand);
 }
 .stat-tile .icon svg { width: 18px; height: 18px; stroke: currentColor; fill: none; }
 .stat-tile .n { font-family: var(--font-mono); font-size: 1.5rem; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; line-height: 1.1; }
 .stat-tile .l { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-top: 2px; }
+.stat-tile.warn::before { background: var(--warning); }
+.stat-tile.bad::before { background: var(--critical); }
+.stat-tile.good::before { background: var(--success); }
 .stat-tile.warn .icon { background: var(--warning-bg); color: var(--warning); }
 .stat-tile.bad .icon { background: var(--critical-bg); color: var(--critical); }
 .stat-tile.good .icon { background: var(--success-bg); color: var(--success); }
@@ -452,22 +479,34 @@ input[type="checkbox"] { accent-color: var(--brand); }
 /* ================= PM by-line panel (requeridos vs. realizados) ================= */
 .pm-panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .pm-panel-head .period { font-size: 0.74rem; color: var(--muted); }
-.pm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 4px; }
-.pm-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; background: var(--surface-2); }
-.pm-card-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
-.pm-card-header .line-name { font-size: 0.88rem; font-weight: 600; color: var(--text); }
-.pm-card-header .pct { font-family: var(--font-mono); font-size: 0.9rem; font-weight: 600; }
-.pm-card-header .pct.good { color: var(--success); }
-.pm-card-header .pct.warn { color: var(--warning); }
-.pm-card-header .pct.bad { color: var(--critical); }
-.pm-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 0.72rem; color: var(--muted); }
-.pm-bar-row .lbl { width: 78px; flex-shrink: 0; }
-.pm-bar-track { flex: 1; height: 8px; border-radius: var(--radius-pill); background: var(--border); overflow: hidden; }
-.pm-bar-fill { height: 100%; border-radius: var(--radius-pill); }
-.pm-bar-fill.required { background: var(--muted); opacity: 0.5; }
-.pm-bar-fill.completed { background: var(--brand); }
-.pm-bar-row .val { width: 24px; text-align: right; font-family: var(--font-mono); color: var(--text); flex-shrink: 0; }
-.pm-alerts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.pm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 4px; }
+.pm-card {
+  display: flex; align-items: center; gap: 14px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 14px 16px; background: var(--surface-2);
+  position: relative; overflow: hidden;
+}
+.pm-card::before {
+  content: ''; position: absolute; inset: 0 0 auto 0; height: 3px;
+  background: var(--pm-accent, var(--viz-neutral));
+}
+.pm-ring-wrap { position: relative; width: 76px; height: 76px; flex-shrink: 0; }
+.pm-ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.pm-ring-wrap circle { fill: none; stroke-width: 8; }
+.pm-ring-track { stroke: var(--ring-track); }
+.pm-ring-fill { stroke: var(--pm-accent, var(--viz-neutral)); stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
+.pm-ring-pct {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 0.92rem; font-weight: 700; color: var(--pm-accent, var(--text));
+}
+.pm-card-body { flex: 1; min-width: 0; }
+.pm-card-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.pm-card-header .line-name { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+.pm-card-counts { display: flex; gap: 14px; font-size: 0.72rem; color: var(--muted); margin-bottom: 8px; }
+.pm-card-counts strong { font-family: var(--font-mono); font-size: 0.86rem; color: var(--text); }
+.pm-card-counts .required strong { color: var(--muted); }
+.pm-card-counts .completed strong { color: var(--pm-accent, var(--brand)); }
+.pm-alerts { display: flex; gap: 6px; flex-wrap: wrap; }
 .pm-empty { color: var(--muted); font-size: 0.82rem; padding: 8px 0; }
 
 /* ================= Detail meta / misc ================= */
@@ -1185,6 +1224,26 @@ function logDelete({ params }) {
   db.logChecklist = db.logChecklist.filter(c => c.log_id !== id);
   return null;
 }
+function logEvidenceSet({ params, body }) {
+  const log = db.logs.find(l => String(l.id) === String(params.id));
+  if (!log) throw httpError(404, 'Registro no encontrado');
+  const { data_url, original_name } = body || {};
+  if (!data_url || !String(data_url).startsWith('data:application/pdf')) throw httpError(400, 'Solo se admiten archivos PDF');
+  log.evidence_data_url = data_url;
+  log.evidence_original_name = original_name || 'evidencia.pdf';
+  const row = withLogJoin(log);
+  row.checklist = db.logChecklist.filter(c => c.log_id === log.id);
+  return clone(row);
+}
+function logEvidenceDelete({ params }) {
+  const log = db.logs.find(l => String(l.id) === String(params.id));
+  if (!log) throw httpError(404, 'Registro no encontrado');
+  delete log.evidence_data_url;
+  delete log.evidence_original_name;
+  const row = withLogJoin(log);
+  row.checklist = db.logChecklist.filter(c => c.log_id === log.id);
+  return clone(row);
+}
 
 /* ------------------------- Notifications ------------------------- */
 
@@ -1374,6 +1433,11 @@ function route(method, segs) {
         if (method === 'GET') return { h: logGet, params: { id } };
         if (method === 'DELETE') return { h: logDelete, params: { id } };
       }
+      if (segs.length === 5 && segs[4] === 'evidence') {
+        const id = segs[3];
+        if (method === 'POST') return { h: logEvidenceSet, params: { id } };
+        if (method === 'DELETE') return { h: logEvidenceDelete, params: { id } };
+      }
     }
   }
   if (segs[1] === 'notifications') {
@@ -1508,6 +1572,46 @@ function toast(msg, isError) {
 
 const CATEGORY_LABELS = { maquina: 'Máquina', herramienta: 'Herramienta', proceso: 'Proceso', equipo: 'Equipo' };
 function categoryLabel(cat) { return CATEGORY_LABELS[cat] || cat || '—'; }
+
+/* ------------------------ Evidencia PDF (bitácora, localStorage) ------------------------
+   En la demo no hay servidor: el PDF se guarda como data URL (base64) directamente en
+   el registro dentro de localStorage, con un límite de tamaño prudente. */
+
+const MAX_EVIDENCE_BYTES = 3 * 1024 * 1024; // 3 MB
+
+function evidenceButtonHtml(log) {
+  return log.evidence_data_url
+    ? `<a class="btn btn-secondary btn-sm" href="${log.evidence_data_url}" target="_blank" rel="noopener">📄 Ver PDF</a>`
+    : `<button class="btn btn-secondary btn-sm" data-action="attach-evidence" data-id="${log.id}">+ PDF</button>`;
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function pickAndUploadEvidence(logId, onDone) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/pdf';
+  input.addEventListener('change', async () => {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') { toast('Solo se admiten archivos PDF', true); return; }
+    if (file.size > MAX_EVIDENCE_BYTES) { toast('El archivo supera el tamaño máximo permitido en la demo (3 MB)', true); return; }
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      await api('POST', `/api/maintenance/logs/${logId}/evidence`, { data_url: dataUrl, original_name: file.name, size: file.size });
+      toast('Evidencia adjuntada');
+      if (onDone) await onDone();
+    } catch (err) { toast(err.message, true); }
+  });
+  input.click();
+}
 
 function statusBadge(status) {
   const labels = { activo: 'Activo', en_mantenimiento: 'En mantenimiento', baja: 'Baja' };
@@ -1781,11 +1885,14 @@ async function renderPmPanel() {
     return;
   }
 
+  const R = 30; // radio del anillo
+  const CIRC = 2 * Math.PI * R;
+
   el.innerHTML = `<div class="pm-grid">${lines.map(l => {
     const pct = l.required_month > 0 ? Math.round((l.completed_month / l.required_month) * 100) : (l.total === 0 ? null : 100);
-    const pctCls = pct === null ? '' : pct >= 80 ? 'good' : pct >= 50 ? 'warn' : 'bad';
-    const reqW = 100;
-    const compW = l.required_month > 0 ? Math.min(100, (l.completed_month / l.required_month) * 100) : 0;
+    const accentVar = pct === null ? '--viz-neutral' : pct >= 80 ? '--viz-good' : pct >= 50 ? '--viz-warn' : '--viz-bad';
+    const frac = l.required_month > 0 ? Math.min(1, l.completed_month / l.required_month) : (l.total === 0 ? 0 : 1);
+    const dashOffset = CIRC * (1 - frac);
 
     const alerts = [];
     if (l.overdue) alerts.push(`<span class="badge badge-overdue">${l.overdue} vencida${l.overdue > 1 ? 's' : ''}</span>`);
@@ -1794,22 +1901,25 @@ async function renderPmPanel() {
     if (l.total === 0) alerts.push(`<span class="muted" style="font-size:0.75rem;">Sin programaciones activas</span>`);
 
     return `
-      <div class="pm-card">
-        <div class="pm-card-header">
-          <span class="line-name">${escapeHtml(l.line_name)}</span>
-          ${pct !== null ? `<span class="pct ${pctCls}">${pct}%</span>` : ''}
+      <div class="pm-card" style="--pm-accent:var(${accentVar})">
+        <div class="pm-ring-wrap">
+          <svg viewBox="0 0 76 76">
+            <circle class="pm-ring-track" cx="38" cy="38" r="${R}"></circle>
+            <circle class="pm-ring-fill" cx="38" cy="38" r="${R}"
+              stroke-dasharray="${CIRC}" stroke-dashoffset="${dashOffset}"></circle>
+          </svg>
+          <div class="pm-ring-pct">${pct !== null ? pct + '%' : '—'}</div>
         </div>
-        <div class="pm-bar-row">
-          <span class="lbl">Requeridos</span>
-          <div class="pm-bar-track"><div class="pm-bar-fill required" style="width:${reqW}%"></div></div>
-          <span class="val">${l.required_month}</span>
+        <div class="pm-card-body">
+          <div class="pm-card-header">
+            <span class="line-name">${escapeHtml(l.line_name)}</span>
+          </div>
+          <div class="pm-card-counts">
+            <span class="required">Requeridos: <strong>${l.required_month}</strong></span>
+            <span class="completed">Realizados: <strong>${l.completed_month}</strong></span>
+          </div>
+          <div class="pm-alerts">${alerts.join('')}</div>
         </div>
-        <div class="pm-bar-row">
-          <span class="lbl">Realizados</span>
-          <div class="pm-bar-track"><div class="pm-bar-fill completed" style="width:${compW}%"></div></div>
-          <span class="val">${l.completed_month}</span>
-        </div>
-        <div class="pm-alerts">${alerts.join('')}</div>
       </div>`;
   }).join('')}</div>
   ${data.unassigned_tools ? `<div class="pm-empty">${data.unassigned_tools} herramienta(s) sin línea asignada — no aparecen en este panel.</div>` : ''}`;
@@ -1984,9 +2094,12 @@ async function renderToolDetailBody() {
     }</tbody></table></div>` : `<p class="muted">Sin programaciones para este activo.</p>`;
   } else {
     const rows = await api('GET', `/api/tools/${id}/logs`);
-    body.innerHTML = rows.length ? `<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Técnico</th><th>Turno</th><th>A tiempo</th><th>Descripción</th></tr></thead><tbody>${
-      rows.map(l => `<tr><td class="mono">${fmtDate(l.performed_date)}</td><td>${escapeHtml(l.maintenance_type)}</td><td>${escapeHtml(l.technician_name || '—')}</td><td>${escapeHtml(l.shift || '—')}</td><td>${onTimeBadge(l.on_time)}</td><td>${escapeHtml(l.description || '—')}</td></tr>`).join('')
+    body.innerHTML = rows.length ? `<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Técnico</th><th>Turno</th><th>A tiempo</th><th>Descripción</th><th>Evidencia</th></tr></thead><tbody>${
+      rows.map(l => `<tr><td class="mono">${fmtDate(l.performed_date)}</td><td>${escapeHtml(l.maintenance_type)}</td><td>${escapeHtml(l.technician_name || '—')}</td><td>${escapeHtml(l.shift || '—')}</td><td>${onTimeBadge(l.on_time)}</td><td>${escapeHtml(l.description || '—')}</td><td>${evidenceButtonHtml(l)}</td></tr>`).join('')
     }</tbody></table></div>` : `<p class="muted">Sin mantenimientos registrados para este activo.</p>`;
+    body.querySelectorAll('button[data-action="attach-evidence"]').forEach(btn => {
+      btn.addEventListener('click', () => pickAndUploadEvidence(btn.dataset.id, renderToolDetailBody));
+    });
   }
 }
 
@@ -2152,17 +2265,21 @@ async function loadLogs() {
       <td>${escapeHtml(l.shift || '—')}</td>
       <td class="mono">${fmtDate(l.performed_date)}</td>
       <td>${onTimeBadge(l.on_time)}</td>
-      <td class="row-actions"><button class="btn btn-danger btn-sm" data-action="delete-log" data-id="${l.id}">Eliminar</button></td>
+      <td class="row-actions">${evidenceButtonHtml(l)}<button class="btn btn-danger btn-sm" data-action="delete-log" data-id="${l.id}">Eliminar</button></td>
     </tr>`).join('') : `<tr class="empty-row"><td colspan="7">Sin mantenimientos registrados.</td></tr>`;
 }
 
 document.getElementById('logsBody').addEventListener('click', async (e) => {
-  const btn = e.target.closest('button[data-action="delete-log"]');
-  if (!btn) return;
-  if (!confirm('¿Eliminar este registro de mantenimiento?')) return;
-  await api('DELETE', `/api/maintenance/logs/${btn.dataset.id}`);
-  toast('Registro eliminado');
-  await loadLogs();
+  const delBtn = e.target.closest('button[data-action="delete-log"]');
+  if (delBtn) {
+    if (!confirm('¿Eliminar este registro de mantenimiento?')) return;
+    await api('DELETE', `/api/maintenance/logs/${delBtn.dataset.id}`);
+    toast('Registro eliminado');
+    await loadLogs();
+    return;
+  }
+  const attachBtn = e.target.closest('button[data-action="attach-evidence"]');
+  if (attachBtn) pickAndUploadEvidence(attachBtn.dataset.id, loadLogs);
 });
 
 document.getElementById('btnNewLog').addEventListener('click', () => openLogForm());
@@ -2219,6 +2336,11 @@ async function openLogForm() {
         <div id="logChecklistContainer"></div>
       </div>
 
+      <div class="field">
+        <label>Evidencia (PDF, opcional — máx. 3 MB en esta demo)</label>
+        <input type="file" id="logEvidenceInput" accept="application/pdf">
+      </div>
+
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" id="logCancel">Cancelar</button>
         <button type="submit" class="btn btn-primary">Guardar</button>
@@ -2262,7 +2384,18 @@ async function openLogForm() {
       notes: row.querySelector('.chk-notes').value.trim() || undefined
     }));
     try {
-      await api('POST', '/api/maintenance/logs', payload);
+      const created = await api('POST', '/api/maintenance/logs', payload);
+      const file = document.getElementById('logEvidenceInput').files[0];
+      if (file) {
+        if (file.type !== 'application/pdf') {
+          toast('Mantenimiento registrado, pero la evidencia no se adjuntó: solo se admiten archivos PDF', true);
+        } else if (file.size > MAX_EVIDENCE_BYTES) {
+          toast('Mantenimiento registrado, pero la evidencia no se adjuntó: supera el máximo de la demo (3 MB)', true);
+        } else {
+          const dataUrl = await readFileAsDataUrl(file);
+          await api('POST', `/api/maintenance/logs/${created.id}/evidence`, { data_url: dataUrl, original_name: file.name, size: file.size });
+        }
+      }
       toast('Mantenimiento registrado');
       closeModal();
       await loadLogs();

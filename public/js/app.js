@@ -47,6 +47,35 @@ function toast(msg, isError) {
 const CATEGORY_LABELS = { maquina: 'Máquina', herramienta: 'Herramienta', proceso: 'Proceso', equipo: 'Equipo' };
 function categoryLabel(cat) { return CATEGORY_LABELS[cat] || cat || '—'; }
 
+/* ------------------------ Evidencia PDF (bitácora) ------------------------ */
+
+function evidenceButtonHtml(log) {
+  return log.evidence_filename
+    ? `<a class="btn btn-secondary btn-sm" href="/api/maintenance/logs/${log.id}/evidence" target="_blank" rel="noopener">📄 Ver PDF</a>`
+    : `<button class="btn btn-secondary btn-sm" data-action="attach-evidence" data-id="${log.id}">+ PDF</button>`;
+}
+
+function pickAndUploadEvidence(logId, onDone) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/pdf';
+  input.addEventListener('change', async () => {
+    const file = input.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('evidence', file);
+    try {
+      const res = await fetch(`/api/maintenance/logs/${logId}/evidence`, { method: 'POST', body: fd });
+      let data = null;
+      try { data = await res.json(); } catch (e) { /* no body */ }
+      if (!res.ok) throw new Error((data && data.error) || `Error ${res.status}`);
+      toast('Evidencia adjuntada');
+      if (onDone) await onDone();
+    } catch (err) { toast(err.message, true); }
+  });
+  input.click();
+}
+
 function statusBadge(status) {
   const labels = { activo: 'Activo', en_mantenimiento: 'En mantenimiento', baja: 'Baja' };
   return `<span class="badge badge-${status}">${labels[status] || status}</span>`;
@@ -319,11 +348,14 @@ async function renderPmPanel() {
     return;
   }
 
+  const R = 30; // radio del anillo
+  const CIRC = 2 * Math.PI * R;
+
   el.innerHTML = `<div class="pm-grid">${lines.map(l => {
     const pct = l.required_month > 0 ? Math.round((l.completed_month / l.required_month) * 100) : (l.total === 0 ? null : 100);
-    const pctCls = pct === null ? '' : pct >= 80 ? 'good' : pct >= 50 ? 'warn' : 'bad';
-    const reqW = 100;
-    const compW = l.required_month > 0 ? Math.min(100, (l.completed_month / l.required_month) * 100) : 0;
+    const accentVar = pct === null ? '--viz-neutral' : pct >= 80 ? '--viz-good' : pct >= 50 ? '--viz-warn' : '--viz-bad';
+    const frac = l.required_month > 0 ? Math.min(1, l.completed_month / l.required_month) : (l.total === 0 ? 0 : 1);
+    const dashOffset = CIRC * (1 - frac);
 
     const alerts = [];
     if (l.overdue) alerts.push(`<span class="badge badge-overdue">${l.overdue} vencida${l.overdue > 1 ? 's' : ''}</span>`);
@@ -332,22 +364,25 @@ async function renderPmPanel() {
     if (l.total === 0) alerts.push(`<span class="muted" style="font-size:0.75rem;">Sin programaciones activas</span>`);
 
     return `
-      <div class="pm-card">
-        <div class="pm-card-header">
-          <span class="line-name">${escapeHtml(l.line_name)}</span>
-          ${pct !== null ? `<span class="pct ${pctCls}">${pct}%</span>` : ''}
+      <div class="pm-card" style="--pm-accent:var(${accentVar})">
+        <div class="pm-ring-wrap">
+          <svg viewBox="0 0 76 76">
+            <circle class="pm-ring-track" cx="38" cy="38" r="${R}"></circle>
+            <circle class="pm-ring-fill" cx="38" cy="38" r="${R}"
+              stroke-dasharray="${CIRC}" stroke-dashoffset="${dashOffset}"></circle>
+          </svg>
+          <div class="pm-ring-pct">${pct !== null ? pct + '%' : '—'}</div>
         </div>
-        <div class="pm-bar-row">
-          <span class="lbl">Requeridos</span>
-          <div class="pm-bar-track"><div class="pm-bar-fill required" style="width:${reqW}%"></div></div>
-          <span class="val">${l.required_month}</span>
+        <div class="pm-card-body">
+          <div class="pm-card-header">
+            <span class="line-name">${escapeHtml(l.line_name)}</span>
+          </div>
+          <div class="pm-card-counts">
+            <span class="required">Requeridos: <strong>${l.required_month}</strong></span>
+            <span class="completed">Realizados: <strong>${l.completed_month}</strong></span>
+          </div>
+          <div class="pm-alerts">${alerts.join('')}</div>
         </div>
-        <div class="pm-bar-row">
-          <span class="lbl">Realizados</span>
-          <div class="pm-bar-track"><div class="pm-bar-fill completed" style="width:${compW}%"></div></div>
-          <span class="val">${l.completed_month}</span>
-        </div>
-        <div class="pm-alerts">${alerts.join('')}</div>
       </div>`;
   }).join('')}</div>
   ${data.unassigned_tools ? `<div class="pm-empty">${data.unassigned_tools} herramienta(s) sin línea asignada — no aparecen en este panel.</div>` : ''}`;
@@ -522,9 +557,12 @@ async function renderToolDetailBody() {
     }</tbody></table></div>` : `<p class="muted">Sin programaciones para este activo.</p>`;
   } else {
     const rows = await api('GET', `/api/tools/${id}/logs`);
-    body.innerHTML = rows.length ? `<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Técnico</th><th>Turno</th><th>A tiempo</th><th>Descripción</th></tr></thead><tbody>${
-      rows.map(l => `<tr><td class="mono">${fmtDate(l.performed_date)}</td><td>${escapeHtml(l.maintenance_type)}</td><td>${escapeHtml(l.technician_name || '—')}</td><td>${escapeHtml(l.shift || '—')}</td><td>${onTimeBadge(l.on_time)}</td><td>${escapeHtml(l.description || '—')}</td></tr>`).join('')
+    body.innerHTML = rows.length ? `<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Técnico</th><th>Turno</th><th>A tiempo</th><th>Descripción</th><th>Evidencia</th></tr></thead><tbody>${
+      rows.map(l => `<tr><td class="mono">${fmtDate(l.performed_date)}</td><td>${escapeHtml(l.maintenance_type)}</td><td>${escapeHtml(l.technician_name || '—')}</td><td>${escapeHtml(l.shift || '—')}</td><td>${onTimeBadge(l.on_time)}</td><td>${escapeHtml(l.description || '—')}</td><td>${evidenceButtonHtml(l)}</td></tr>`).join('')
     }</tbody></table></div>` : `<p class="muted">Sin mantenimientos registrados para este activo.</p>`;
+    body.querySelectorAll('button[data-action="attach-evidence"]').forEach(btn => {
+      btn.addEventListener('click', () => pickAndUploadEvidence(btn.dataset.id, renderToolDetailBody));
+    });
   }
 }
 
@@ -690,17 +728,21 @@ async function loadLogs() {
       <td>${escapeHtml(l.shift || '—')}</td>
       <td class="mono">${fmtDate(l.performed_date)}</td>
       <td>${onTimeBadge(l.on_time)}</td>
-      <td class="row-actions"><button class="btn btn-danger btn-sm" data-action="delete-log" data-id="${l.id}">Eliminar</button></td>
+      <td class="row-actions">${evidenceButtonHtml(l)}<button class="btn btn-danger btn-sm" data-action="delete-log" data-id="${l.id}">Eliminar</button></td>
     </tr>`).join('') : `<tr class="empty-row"><td colspan="7">Sin mantenimientos registrados.</td></tr>`;
 }
 
 document.getElementById('logsBody').addEventListener('click', async (e) => {
-  const btn = e.target.closest('button[data-action="delete-log"]');
-  if (!btn) return;
-  if (!confirm('¿Eliminar este registro de mantenimiento?')) return;
-  await api('DELETE', `/api/maintenance/logs/${btn.dataset.id}`);
-  toast('Registro eliminado');
-  await loadLogs();
+  const delBtn = e.target.closest('button[data-action="delete-log"]');
+  if (delBtn) {
+    if (!confirm('¿Eliminar este registro de mantenimiento?')) return;
+    await api('DELETE', `/api/maintenance/logs/${delBtn.dataset.id}`);
+    toast('Registro eliminado');
+    await loadLogs();
+    return;
+  }
+  const attachBtn = e.target.closest('button[data-action="attach-evidence"]');
+  if (attachBtn) pickAndUploadEvidence(attachBtn.dataset.id, loadLogs);
 });
 
 document.getElementById('btnNewLog').addEventListener('click', () => openLogForm());
@@ -757,6 +799,11 @@ async function openLogForm() {
         <div id="logChecklistContainer"></div>
       </div>
 
+      <div class="field">
+        <label>Evidencia (PDF, opcional)</label>
+        <input type="file" id="logEvidenceInput" accept="application/pdf">
+      </div>
+
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" id="logCancel">Cancelar</button>
         <button type="submit" class="btn btn-primary">Guardar</button>
@@ -800,7 +847,21 @@ async function openLogForm() {
       notes: row.querySelector('.chk-notes').value.trim() || undefined
     }));
     try {
-      await api('POST', '/api/maintenance/logs', payload);
+      const created = await api('POST', '/api/maintenance/logs', payload);
+      const file = document.getElementById('logEvidenceInput').files[0];
+      if (file) {
+        const evFd = new FormData();
+        evFd.append('evidence', file);
+        const evRes = await fetch(`/api/maintenance/logs/${created.id}/evidence`, { method: 'POST', body: evFd });
+        if (!evRes.ok) {
+          const evData = await evRes.json().catch(() => null);
+          toast('Mantenimiento registrado, pero falló la evidencia: ' + ((evData && evData.error) || 'error desconocido'), true);
+          closeModal();
+          await loadLogs();
+          await loadSchedules();
+          return;
+        }
+      }
       toast('Mantenimiento registrado');
       closeModal();
       await loadLogs();

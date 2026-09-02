@@ -77,6 +77,8 @@ db.exec(`
     description TEXT,
     parts_used TEXT,
     on_time INTEGER,
+    evidence_filename TEXT,
+    evidence_original_name TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
