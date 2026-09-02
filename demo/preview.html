@@ -319,6 +319,15 @@ main.content { padding: 12px 28px 60px; max-width: 1180px; }
 .btn-sm { padding: 5px 10px; font-size: 0.72rem; }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
+.btn-icon {
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface);
+  width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.9rem; line-height: 1; cursor: pointer; padding: 0;
+  transition: background 0.1s, border-color 0.1s;
+}
+.btn-icon:hover { border-color: var(--brand); background: var(--brand-tint); }
+.btn-icon-danger:hover { border-color: var(--critical); background: var(--critical-bg); }
+
 /* ================= Forms ================= */
 label { display: block; font-size: 0.72rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
 input, select, textarea {
@@ -508,6 +517,23 @@ input[type="checkbox"] { accent-color: var(--brand); }
 .pm-card-counts .completed strong { color: var(--pm-accent, var(--brand)); }
 .pm-alerts { display: flex; gap: 6px; flex-wrap: wrap; }
 .pm-empty { color: var(--muted); font-size: 0.82rem; padding: 8px 0; }
+
+/* ================= Fotografía de herramienta ================= */
+.tool-thumb {
+  border-radius: var(--radius-sm); object-fit: cover; display: block;
+  background: var(--surface-2); border: 1px solid var(--border);
+}
+.tool-thumb-placeholder {
+  display: flex; align-items: center; justify-content: center; font-size: 1rem; color: var(--muted);
+}
+.tool-thumb-lg { width: 120px; height: 120px; font-size: 2.2rem; border-radius: var(--radius); }
+.tool-photo-preview {
+  width: 36px; height: 36px; object-fit: cover; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); display: block; margin-bottom: 6px;
+}
+.tool-photo-preview-lg { width: 120px; height: 120px; border-radius: var(--radius); }
+.tool-detail-photo { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
+.tool-photo-actions { display: flex; flex-direction: column; gap: 6px; justify-content: center; }
 
 /* ================= Detail meta / misc ================= */
 .detail-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -712,7 +738,7 @@ input[type="checkbox"] { accent-color: var(--brand); }
           <div class="card">
             <div class="card-body table-wrap">
               <table>
-                <thead><tr><th>Código</th><th>Nombre</th><th>Categoría</th><th>Línea</th><th>Estado</th><th></th></tr></thead>
+                <thead><tr><th>Foto</th><th>Código</th><th>Nombre</th><th>Categoría</th><th>Línea</th><th>Estado</th><th></th></tr></thead>
                 <tbody id="toolsBody"></tbody>
               </table>
             </div>
@@ -725,6 +751,7 @@ input[type="checkbox"] { accent-color: var(--brand); }
               <button class="btn btn-secondary btn-sm" id="btnCloseToolDetail">Cerrar</button>
             </div>
             <div class="card-body">
+              <div id="toolDetailPhoto" class="tool-detail-photo"></div>
               <div id="toolDetailMeta" class="detail-meta"></div>
               <div class="subtabs">
                 <button class="subtab-btn active" data-sub="sched">Programaciones</button>
@@ -958,6 +985,24 @@ function toolsDelete({ params }) {
   db.logs = db.logs.filter(l => String(l.tool_id) !== String(id));
   db.logChecklist = db.logChecklist.filter(c => !logIds.includes(c.log_id));
   return null;
+}
+function toolPhotoSet({ params, body }) {
+  const t = db.tools.find(t => String(t.id) === String(params.id));
+  if (!t) throw httpError(404, 'Herramienta no encontrada');
+  const { data_url, original_name } = body || {};
+  if (!data_url || !/^data:image\/(jpeg|png|webp)/.test(String(data_url))) throw httpError(400, 'Solo se admiten imágenes JPG, PNG o WEBP');
+  t.photo_data_url = data_url;
+  t.photo_original_name = original_name || 'foto.jpg';
+  t.updated_at = nowIso();
+  return clone(withLineJoin(t));
+}
+function toolPhotoDelete({ params }) {
+  const t = db.tools.find(t => String(t.id) === String(params.id));
+  if (!t) throw httpError(404, 'Herramienta no encontrada');
+  delete t.photo_data_url;
+  delete t.photo_original_name;
+  t.updated_at = nowIso();
+  return clone(withLineJoin(t));
 }
 function withTechJoin(row, key = 'assigned_technician_id') {
   const tech = db.technicians.find(t => String(t.id) === String(row[key]));
@@ -1387,6 +1432,11 @@ function route(method, segs) {
       if (segs[3] === 'schedules') return { h: toolSchedules, params: { id } };
       if (segs[3] === 'logs') return { h: toolLogs, params: { id } };
     }
+    if (segs.length === 4 && segs[3] === 'photo') {
+      const id = segs[2];
+      if (method === 'POST') return { h: toolPhotoSet, params: { id } };
+      if (method === 'DELETE') return { h: toolPhotoDelete, params: { id } };
+    }
   }
   if (segs[1] === 'technicians') {
     if (segs.length === 2) {
@@ -1611,6 +1661,52 @@ function pickAndUploadEvidence(logId, onDone) {
     } catch (err) { toast(err.message, true); }
   });
   input.click();
+}
+
+/* ------------------------ Fotografía de herramienta/equipo/fixture ------------------------ */
+
+const MAX_PHOTO_BYTES = 3 * 1024 * 1024; // 3 MB
+
+function toolPhotoUrl(tool) { return tool.photo_data_url || null; }
+
+function toolThumbHtml(tool, size) {
+  const px = size || 36;
+  const url = toolPhotoUrl(tool);
+  return url
+    ? `<img class="tool-thumb" src="${url}" alt="" style="width:${px}px;height:${px}px;">`
+    : `<div class="tool-thumb tool-thumb-placeholder" style="width:${px}px;height:${px}px;">${categoryIcon(tool.category)}</div>`;
+}
+
+function categoryIcon(cat) {
+  return { maquina: '⚙️', herramienta: '🔧', proceso: '🔄', equipo: '📦' }[cat] || '📦';
+}
+
+function pickAndUploadPhoto(toolId, onDone) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/jpeg,image/png,image/webp';
+  input.addEventListener('change', async () => {
+    const file = input.files[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { toast('Solo se admiten imágenes JPG, PNG o WEBP', true); return; }
+    if (file.size > MAX_PHOTO_BYTES) { toast('La imagen supera el tamaño máximo permitido en la demo (3 MB)', true); return; }
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      await api('POST', `/api/tools/${toolId}/photo`, { data_url: dataUrl, original_name: file.name, size: file.size });
+      toast('Fotografía guardada');
+      if (onDone) await onDone();
+    } catch (err) { toast(err.message, true); }
+  });
+  input.click();
+}
+
+async function removeToolPhoto(toolId, onDone) {
+  if (!confirm('¿Quitar la fotografía de este activo?')) return;
+  try {
+    await api('DELETE', `/api/tools/${toolId}/photo`);
+    toast('Fotografía eliminada');
+    if (onDone) await onDone();
+  } catch (err) { toast(err.message, true); }
 }
 
 function statusBadge(status) {
@@ -1949,17 +2045,18 @@ async function loadToolsTable() {
 
   document.getElementById('toolsBody').innerHTML = rows.length ? rows.map(t => `
     <tr>
+      <td>${toolThumbHtml(t)}</td>
       <td class="mono">${escapeHtml(t.code)}</td>
       <td>${escapeHtml(t.name)}</td>
       <td>${categoryLabel(t.category)}</td>
       <td>${escapeHtml(t.line_name || '—')}</td>
       <td>${statusBadge(t.status)}</td>
       <td class="row-actions">
-        <button class="btn btn-secondary btn-sm" data-action="view" data-id="${t.id}">Ver</button>
-        <button class="btn btn-secondary btn-sm" data-action="edit" data-id="${t.id}">Editar</button>
-        <button class="btn btn-danger btn-sm" data-action="delete" data-id="${t.id}">Eliminar</button>
+        <button class="btn-icon" data-action="view" data-id="${t.id}" title="Ver detalle">👁️</button>
+        <button class="btn-icon" data-action="edit" data-id="${t.id}" title="Editar">✏️</button>
+        <button class="btn-icon btn-icon-danger" data-action="delete" data-id="${t.id}" title="Eliminar">🗑️</button>
       </td>
-    </tr>`).join('') : `<tr class="empty-row"><td colspan="6">Sin resultados. Crea el primero con "+ Nueva herramienta".</td></tr>`;
+    </tr>`).join('') : `<tr class="empty-row"><td colspan="7">Sin resultados. Crea el primero con "+ Nueva herramienta".</td></tr>`;
 }
 
 document.getElementById('toolSearch').addEventListener('input', debounce(loadToolsTable, 250));
@@ -2029,6 +2126,12 @@ function openToolForm(tool) {
         </select>
       </div>
       <div class="field"><label>Notas</label><textarea name="notes">${escapeHtml(tool?.notes || '')}</textarea></div>
+      <div class="field">
+        <label>Fotografía del equipo, herramienta o fixture (opcional — máx. 3 MB en esta demo)</label>
+        <div id="toolPhotoPreviewWrap">${isEdit && toolPhotoUrl(tool) ? `<img class="tool-photo-preview" src="${toolPhotoUrl(tool)}" alt="">` : ''}</div>
+        <input type="file" id="toolPhotoInput" accept="image/jpeg,image/png,image/webp">
+        ${isEdit && tool.photo_data_url ? `<button type="button" class="btn btn-secondary btn-sm" id="toolPhotoRemoveBtn" style="margin-top:6px;">Quitar foto actual</button>` : ''}
+      </div>
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" id="toolFormCancel">Cancelar</button>
         <button type="submit" class="btn btn-primary">${isEdit ? 'Guardar cambios' : 'Crear'}</button>
@@ -2036,13 +2139,33 @@ function openToolForm(tool) {
     </form>
   `);
   document.getElementById('toolFormCancel').addEventListener('click', closeModal);
+  const removeBtn = document.getElementById('toolPhotoRemoveBtn');
+  if (removeBtn) {
+    removeBtn.addEventListener('click', async () => {
+      await removeToolPhoto(tool.id, async () => {
+        document.getElementById('toolPhotoPreviewWrap').innerHTML = '';
+        removeBtn.remove();
+        await loadToolsTable();
+      });
+    });
+  }
   document.getElementById('toolForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const payload = Object.fromEntries(fd.entries());
     try {
-      if (isEdit) await api('PUT', `/api/tools/${tool.id}`, payload);
-      else await api('POST', '/api/tools', payload);
+      const saved = isEdit ? await api('PUT', `/api/tools/${tool.id}`, payload) : await api('POST', '/api/tools', payload);
+      const photoFile = document.getElementById('toolPhotoInput').files[0];
+      if (photoFile) {
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(photoFile.type)) {
+          toast(`${isEdit ? 'Activo actualizado' : 'Activo creado'}, pero la foto no se guardó: solo se admiten JPG, PNG o WEBP`, true);
+        } else if (photoFile.size > MAX_PHOTO_BYTES) {
+          toast(`${isEdit ? 'Activo actualizado' : 'Activo creado'}, pero la foto no se guardó: supera el máximo de la demo (3 MB)`, true);
+        } else {
+          const dataUrl = await readFileAsDataUrl(photoFile);
+          await api('POST', `/api/tools/${saved.id}/photo`, { data_url: dataUrl, original_name: photoFile.name, size: photoFile.size });
+        }
+      }
       toast(isEdit ? 'Activo actualizado' : 'Activo creado');
       closeModal();
       await loadToolsTable();
@@ -2055,6 +2178,16 @@ async function openToolDetail(id) {
   toolDetailSub = 'sched';
   const tool = await api('GET', `/api/tools/${id}`);
   document.getElementById('toolDetailTitle').textContent = `${tool.code} — ${tool.name}`;
+  document.getElementById('toolDetailPhoto').innerHTML = `
+    ${toolPhotoUrl(tool) ? `<img class="tool-photo-preview tool-photo-preview-lg" src="${toolPhotoUrl(tool)}" alt="">` : `<div class="tool-thumb tool-thumb-placeholder tool-thumb-lg">${categoryIcon(tool.category)}</div>`}
+    <div class="tool-photo-actions">
+      <button type="button" class="btn btn-secondary btn-sm" id="toolDetailPhotoBtn">${tool.photo_data_url ? 'Cambiar foto' : '+ Foto'}</button>
+      ${tool.photo_data_url ? `<button type="button" class="btn btn-secondary btn-sm" id="toolDetailPhotoRemoveBtn">Quitar</button>` : ''}
+    </div>
+  `;
+  document.getElementById('toolDetailPhotoBtn').addEventListener('click', () => pickAndUploadPhoto(tool.id, () => openToolDetail(id)));
+  const detailRemoveBtn = document.getElementById('toolDetailPhotoRemoveBtn');
+  if (detailRemoveBtn) detailRemoveBtn.addEventListener('click', () => removeToolPhoto(tool.id, () => openToolDetail(id)));
   document.getElementById('toolDetailMeta').innerHTML = `
     <span class="chip">Categoría: <strong>${categoryLabel(tool.category)}</strong></span>
     <span class="chip">Línea: <strong>${escapeHtml(tool.line_name || 'Sin asignar')}</strong></span>

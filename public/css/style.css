@@ -310,6 +310,15 @@ main.content { padding: 12px 28px 60px; max-width: 1180px; }
 .btn-sm { padding: 5px 10px; font-size: 0.72rem; }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
+.btn-icon {
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface);
+  width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.9rem; line-height: 1; cursor: pointer; padding: 0;
+  transition: background 0.1s, border-color 0.1s;
+}
+.btn-icon:hover { border-color: var(--brand); background: var(--brand-tint); }
+.btn-icon-danger:hover { border-color: var(--critical); background: var(--critical-bg); }
+
 /* ================= Forms ================= */
 label { display: block; font-size: 0.72rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
 input, select, textarea {
@@ -499,6 +508,23 @@ input[type="checkbox"] { accent-color: var(--brand); }
 .pm-card-counts .completed strong { color: var(--pm-accent, var(--brand)); }
 .pm-alerts { display: flex; gap: 6px; flex-wrap: wrap; }
 .pm-empty { color: var(--muted); font-size: 0.82rem; padding: 8px 0; }
+
+/* ================= Fotografía de herramienta ================= */
+.tool-thumb {
+  border-radius: var(--radius-sm); object-fit: cover; display: block;
+  background: var(--surface-2); border: 1px solid var(--border);
+}
+.tool-thumb-placeholder {
+  display: flex; align-items: center; justify-content: center; font-size: 1rem; color: var(--muted);
+}
+.tool-thumb-lg { width: 120px; height: 120px; font-size: 2.2rem; border-radius: var(--radius); }
+.tool-photo-preview {
+  width: 36px; height: 36px; object-fit: cover; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); display: block; margin-bottom: 6px;
+}
+.tool-photo-preview-lg { width: 120px; height: 120px; border-radius: var(--radius); }
+.tool-detail-photo { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
+.tool-photo-actions { display: flex; flex-direction: column; gap: 6px; justify-content: center; }
 
 /* ================= Detail meta / misc ================= */
 .detail-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }

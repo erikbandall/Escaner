@@ -76,6 +76,54 @@ function pickAndUploadEvidence(logId, onDone) {
   input.click();
 }
 
+/* ------------------------ Fotografía de herramienta/equipo/fixture ------------------------ */
+
+function toolPhotoUrl(tool) {
+  return tool.photo_filename ? `/api/tools/${tool.id}/photo?v=${encodeURIComponent(tool.photo_filename)}` : null;
+}
+
+function toolThumbHtml(tool, size) {
+  const px = size || 36;
+  const url = toolPhotoUrl(tool);
+  return url
+    ? `<img class="tool-thumb" src="${url}" alt="" style="width:${px}px;height:${px}px;">`
+    : `<div class="tool-thumb tool-thumb-placeholder" style="width:${px}px;height:${px}px;">${categoryIcon(tool.category)}</div>`;
+}
+
+function categoryIcon(cat) {
+  return { maquina: '⚙️', herramienta: '🔧', proceso: '🔄', equipo: '📦' }[cat] || '📦';
+}
+
+function pickAndUploadPhoto(toolId, onDone) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/jpeg,image/png,image/webp';
+  input.addEventListener('change', async () => {
+    const file = input.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('photo', file);
+    try {
+      const res = await fetch(`/api/tools/${toolId}/photo`, { method: 'POST', body: fd });
+      let data = null;
+      try { data = await res.json(); } catch (e) { /* no body */ }
+      if (!res.ok) throw new Error((data && data.error) || `Error ${res.status}`);
+      toast('Fotografía guardada');
+      if (onDone) await onDone();
+    } catch (err) { toast(err.message, true); }
+  });
+  input.click();
+}
+
+async function removeToolPhoto(toolId, onDone) {
+  if (!confirm('¿Quitar la fotografía de este activo?')) return;
+  try {
+    await api('DELETE', `/api/tools/${toolId}/photo`);
+    toast('Fotografía eliminada');
+    if (onDone) await onDone();
+  } catch (err) { toast(err.message, true); }
+}
+
 function statusBadge(status) {
   const labels = { activo: 'Activo', en_mantenimiento: 'En mantenimiento', baja: 'Baja' };
   return `<span class="badge badge-${status}">${labels[status] || status}</span>`;
@@ -412,17 +460,18 @@ async function loadToolsTable() {
 
   document.getElementById('toolsBody').innerHTML = rows.length ? rows.map(t => `
     <tr>
+      <td>${toolThumbHtml(t)}</td>
       <td class="mono">${escapeHtml(t.code)}</td>
       <td>${escapeHtml(t.name)}</td>
       <td>${categoryLabel(t.category)}</td>
       <td>${escapeHtml(t.line_name || '—')}</td>
       <td>${statusBadge(t.status)}</td>
       <td class="row-actions">
-        <button class="btn btn-secondary btn-sm" data-action="view" data-id="${t.id}">Ver</button>
-        <button class="btn btn-secondary btn-sm" data-action="edit" data-id="${t.id}">Editar</button>
-        <button class="btn btn-danger btn-sm" data-action="delete" data-id="${t.id}">Eliminar</button>
+        <button class="btn-icon" data-action="view" data-id="${t.id}" title="Ver detalle">👁️</button>
+        <button class="btn-icon" data-action="edit" data-id="${t.id}" title="Editar">✏️</button>
+        <button class="btn-icon btn-icon-danger" data-action="delete" data-id="${t.id}" title="Eliminar">🗑️</button>
       </td>
-    </tr>`).join('') : `<tr class="empty-row"><td colspan="6">Sin resultados. Crea el primero con "+ Nueva herramienta".</td></tr>`;
+    </tr>`).join('') : `<tr class="empty-row"><td colspan="7">Sin resultados. Crea el primero con "+ Nueva herramienta".</td></tr>`;
 }
 
 document.getElementById('toolSearch').addEventListener('input', debounce(loadToolsTable, 250));
@@ -492,6 +541,12 @@ function openToolForm(tool) {
         </select>
       </div>
       <div class="field"><label>Notas</label><textarea name="notes">${escapeHtml(tool?.notes || '')}</textarea></div>
+      <div class="field">
+        <label>Fotografía del equipo, herramienta o fixture (opcional)</label>
+        <div id="toolPhotoPreviewWrap">${isEdit && toolPhotoUrl(tool) ? `<img class="tool-photo-preview" src="${toolPhotoUrl(tool)}" alt="">` : ''}</div>
+        <input type="file" id="toolPhotoInput" accept="image/jpeg,image/png,image/webp">
+        ${isEdit && tool.photo_filename ? `<button type="button" class="btn btn-secondary btn-sm" id="toolPhotoRemoveBtn" style="margin-top:6px;">Quitar foto actual</button>` : ''}
+      </div>
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" id="toolFormCancel">Cancelar</button>
         <button type="submit" class="btn btn-primary">${isEdit ? 'Guardar cambios' : 'Crear'}</button>
@@ -499,13 +554,35 @@ function openToolForm(tool) {
     </form>
   `);
   document.getElementById('toolFormCancel').addEventListener('click', closeModal);
+  const removeBtn = document.getElementById('toolPhotoRemoveBtn');
+  if (removeBtn) {
+    removeBtn.addEventListener('click', async () => {
+      await removeToolPhoto(tool.id, async () => {
+        document.getElementById('toolPhotoPreviewWrap').innerHTML = '';
+        removeBtn.remove();
+        await loadToolsTable();
+      });
+    });
+  }
   document.getElementById('toolForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const payload = Object.fromEntries(fd.entries());
     try {
-      if (isEdit) await api('PUT', `/api/tools/${tool.id}`, payload);
-      else await api('POST', '/api/tools', payload);
+      const saved = isEdit ? await api('PUT', `/api/tools/${tool.id}`, payload) : await api('POST', '/api/tools', payload);
+      const photoFile = document.getElementById('toolPhotoInput').files[0];
+      if (photoFile) {
+        const photoFd = new FormData();
+        photoFd.append('photo', photoFile);
+        const photoRes = await fetch(`/api/tools/${saved.id}/photo`, { method: 'POST', body: photoFd });
+        if (!photoRes.ok) {
+          const photoData = await photoRes.json().catch(() => null);
+          toast(`${isEdit ? 'Activo actualizado' : 'Activo creado'}, pero falló la foto: ${(photoData && photoData.error) || 'error desconocido'}`, true);
+          closeModal();
+          await loadToolsTable();
+          return;
+        }
+      }
       toast(isEdit ? 'Activo actualizado' : 'Activo creado');
       closeModal();
       await loadToolsTable();
@@ -518,6 +595,16 @@ async function openToolDetail(id) {
   toolDetailSub = 'sched';
   const tool = await api('GET', `/api/tools/${id}`);
   document.getElementById('toolDetailTitle').textContent = `${tool.code} — ${tool.name}`;
+  document.getElementById('toolDetailPhoto').innerHTML = `
+    ${toolPhotoUrl(tool) ? `<img class="tool-photo-preview tool-photo-preview-lg" src="${toolPhotoUrl(tool)}" alt="">` : `<div class="tool-thumb tool-thumb-placeholder tool-thumb-lg">${categoryIcon(tool.category)}</div>`}
+    <div class="tool-photo-actions">
+      <button type="button" class="btn btn-secondary btn-sm" id="toolDetailPhotoBtn">${tool.photo_filename ? 'Cambiar foto' : '+ Foto'}</button>
+      ${tool.photo_filename ? `<button type="button" class="btn btn-secondary btn-sm" id="toolDetailPhotoRemoveBtn">Quitar</button>` : ''}
+    </div>
+  `;
+  document.getElementById('toolDetailPhotoBtn').addEventListener('click', () => pickAndUploadPhoto(tool.id, () => openToolDetail(id)));
+  const detailRemoveBtn = document.getElementById('toolDetailPhotoRemoveBtn');
+  if (detailRemoveBtn) detailRemoveBtn.addEventListener('click', () => removeToolPhoto(tool.id, () => openToolDetail(id)));
   document.getElementById('toolDetailMeta').innerHTML = `
     <span class="chip">Categoría: <strong>${categoryLabel(tool.category)}</strong></span>
     <span class="chip">Línea: <strong>${escapeHtml(tool.line_name || 'Sin asignar')}</strong></span>
