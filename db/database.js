@@ -39,6 +39,8 @@ db.exec(`
     assembly_line_id INTEGER REFERENCES assembly_lines(id) ON DELETE SET NULL,
     status TEXT NOT NULL DEFAULT 'activo' CHECK (status IN ('activo','en_mantenimiento','baja')),
     notes TEXT,
+    photo_filename TEXT,
+    photo_original_name TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
@@ -77,6 +79,8 @@ db.exec(`
     description TEXT,
     parts_used TEXT,
     on_time INTEGER,
+    evidence_filename TEXT,
+    evidence_original_name TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 

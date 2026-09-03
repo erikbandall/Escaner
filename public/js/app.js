@@ -47,6 +47,83 @@ function toast(msg, isError) {
 const CATEGORY_LABELS = { maquina: 'Máquina', herramienta: 'Herramienta', proceso: 'Proceso', equipo: 'Equipo' };
 function categoryLabel(cat) { return CATEGORY_LABELS[cat] || cat || '—'; }
 
+/* ------------------------ Evidencia PDF (bitácora) ------------------------ */
+
+function evidenceButtonHtml(log) {
+  return log.evidence_filename
+    ? `<a class="btn btn-secondary btn-sm" href="/api/maintenance/logs/${log.id}/evidence" target="_blank" rel="noopener">📄 Ver PDF</a>`
+    : `<button class="btn btn-secondary btn-sm" data-action="attach-evidence" data-id="${log.id}">+ PDF</button>`;
+}
+
+function pickAndUploadEvidence(logId, onDone) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/pdf';
+  input.addEventListener('change', async () => {
+    const file = input.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('evidence', file);
+    try {
+      const res = await fetch(`/api/maintenance/logs/${logId}/evidence`, { method: 'POST', body: fd });
+      let data = null;
+      try { data = await res.json(); } catch (e) { /* no body */ }
+      if (!res.ok) throw new Error((data && data.error) || `Error ${res.status}`);
+      toast('Evidencia adjuntada');
+      if (onDone) await onDone();
+    } catch (err) { toast(err.message, true); }
+  });
+  input.click();
+}
+
+/* ------------------------ Fotografía de herramienta/equipo/fixture ------------------------ */
+
+function toolPhotoUrl(tool) {
+  return tool.photo_filename ? `/api/tools/${tool.id}/photo?v=${encodeURIComponent(tool.photo_filename)}` : null;
+}
+
+function toolThumbHtml(tool, size) {
+  const px = size || 36;
+  const url = toolPhotoUrl(tool);
+  return url
+    ? `<img class="tool-thumb" src="${url}" alt="" style="width:${px}px;height:${px}px;">`
+    : `<div class="tool-thumb tool-thumb-placeholder" style="width:${px}px;height:${px}px;">${categoryIcon(tool.category)}</div>`;
+}
+
+function categoryIcon(cat) {
+  return { maquina: '⚙️', herramienta: '🔧', proceso: '🔄', equipo: '📦' }[cat] || '📦';
+}
+
+function pickAndUploadPhoto(toolId, onDone) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/jpeg,image/png,image/webp';
+  input.addEventListener('change', async () => {
+    const file = input.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('photo', file);
+    try {
+      const res = await fetch(`/api/tools/${toolId}/photo`, { method: 'POST', body: fd });
+      let data = null;
+      try { data = await res.json(); } catch (e) { /* no body */ }
+      if (!res.ok) throw new Error((data && data.error) || `Error ${res.status}`);
+      toast('Fotografía guardada');
+      if (onDone) await onDone();
+    } catch (err) { toast(err.message, true); }
+  });
+  input.click();
+}
+
+async function removeToolPhoto(toolId, onDone) {
+  if (!confirm('¿Quitar la fotografía de este activo?')) return;
+  try {
+    await api('DELETE', `/api/tools/${toolId}/photo`);
+    toast('Fotografía eliminada');
+    if (onDone) await onDone();
+  } catch (err) { toast(err.message, true); }
+}
+
 function statusBadge(status) {
   const labels = { activo: 'Activo', en_mantenimiento: 'En mantenimiento', baja: 'Baja' };
   return `<span class="badge badge-${status}">${labels[status] || status}</span>`;
@@ -252,7 +329,7 @@ async function renderDashboard() {
   techSel.onchange = loadDashboard;
 
   await loadDashboard();
-  await renderLineChart();
+  await renderPmPanel();
   await refreshNotifBadge();
 }
 
@@ -302,36 +379,61 @@ async function loadDashboard() {
     </tr>`).join('') : `<tr class="empty-row"><td colspan="5">Sin mantenimientos registrados</td></tr>`;
 }
 
-async function renderLineChart() {
-  const data = await api('GET', '/api/dashboard/by-line');
-  const el = document.getElementById('lineChart');
-  const lines = data.lines.filter(l => l.total > 0);
+function fmtMonthLabel(dateStr) {
+  const [y, m] = dateStr.split('-').map(Number);
+  const names = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  return `${names[m - 1]} ${y}`;
+}
 
+async function renderPmPanel() {
+  const data = await api('GET', '/api/dashboard/by-line');
+  const el = document.getElementById('pmPanel');
+  document.getElementById('pmPeriod').textContent = data.month_start ? fmtMonthLabel(data.month_start) : '';
+
+  const lines = data.lines;
   if (!lines.length) {
-    el.innerHTML = `<div class="line-chart-empty">Todavía no hay programaciones activas asociadas a una línea de ensamble.</div>`;
+    el.innerHTML = `<div class="pm-empty">Todavía no hay líneas de ensamble configuradas. Créalas en Configuración → Líneas de ensamble.</div>`;
     return;
   }
 
-  const maxTotal = Math.max(...lines.map(l => l.total), 1);
-  el.innerHTML = lines.map(l => {
-    const w = (n) => (n / maxTotal * 100).toFixed(1);
+  const R = 30; // radio del anillo
+  const CIRC = 2 * Math.PI * R;
+
+  el.innerHTML = `<div class="pm-grid">${lines.map(l => {
+    const pct = l.required_month > 0 ? Math.round((l.completed_month / l.required_month) * 100) : (l.total === 0 ? null : 100);
+    const accentVar = pct === null ? '--viz-neutral' : pct >= 80 ? '--viz-good' : pct >= 50 ? '--viz-warn' : '--viz-bad';
+    const frac = l.required_month > 0 ? Math.min(1, l.completed_month / l.required_month) : (l.total === 0 ? 0 : 1);
+    const dashOffset = CIRC * (1 - frac);
+
+    const alerts = [];
+    if (l.overdue) alerts.push(`<span class="badge badge-overdue">${l.overdue} vencida${l.overdue > 1 ? 's' : ''}</span>`);
+    if (l.upcoming) alerts.push(`<span class="badge badge-upcoming">${l.upcoming} próxima${l.upcoming > 1 ? 's' : ''}</span>`);
+    if (!l.overdue && !l.upcoming && l.total > 0) alerts.push(`<span class="badge badge-ok">Al día</span>`);
+    if (l.total === 0) alerts.push(`<span class="muted" style="font-size:0.75rem;">Sin programaciones activas</span>`);
+
     return `
-      <div class="line-chart-row">
-        <div class="line-name">${escapeHtml(l.line_name)}</div>
-        <div class="line-bar" style="width:${(l.total / maxTotal * 100).toFixed(1)}%; min-width: 40px;">
-          ${l.overdue ? `<div class="seg-overdue" style="width:${(l.overdue / l.total * 100).toFixed(1)}%"></div>` : ''}
-          ${l.upcoming ? `<div class="seg-upcoming" style="width:${(l.upcoming / l.total * 100).toFixed(1)}%"></div>` : ''}
-          ${l.ok ? `<div class="seg-ok" style="width:${(l.ok / l.total * 100).toFixed(1)}%"></div>` : ''}
+      <div class="pm-card" style="--pm-accent:var(${accentVar})">
+        <div class="pm-ring-wrap">
+          <svg viewBox="0 0 76 76">
+            <circle class="pm-ring-track" cx="38" cy="38" r="${R}"></circle>
+            <circle class="pm-ring-fill" cx="38" cy="38" r="${R}"
+              stroke-dasharray="${CIRC}" stroke-dashoffset="${dashOffset}"></circle>
+          </svg>
+          <div class="pm-ring-pct">${pct !== null ? pct + '%' : '—'}</div>
         </div>
-        <div class="line-total">${l.total} progr.</div>
+        <div class="pm-card-body">
+          <div class="pm-card-header">
+            <span class="line-name">${escapeHtml(l.line_name)}</span>
+          </div>
+          <div class="pm-card-counts">
+            <span class="required">Requeridos: <strong>${l.required_month}</strong></span>
+            <span class="completed">Realizados: <strong>${l.completed_month}</strong></span>
+          </div>
+          <div class="pm-alerts">${alerts.join('')}</div>
+        </div>
       </div>`;
-  }).join('') + `
-    <div class="line-chart-legend">
-      <span><span class="sw" style="background:var(--critical)"></span> Vencidas</span>
-      <span><span class="sw" style="background:var(--warning)"></span> Próximas</span>
-      <span><span class="sw" style="background:var(--success)"></span> Al día</span>
-      ${data.unassigned_tools ? `<span>${data.unassigned_tools} herramienta(s) sin línea asignada</span>` : ''}
-    </div>`;
+  }).join('')}</div>
+  ${data.unassigned_tools ? `<div class="pm-empty">${data.unassigned_tools} herramienta(s) sin línea asignada — no aparecen en este panel.</div>` : ''}`;
 }
 
 /* ======================== TOOLS ======================== */
@@ -358,17 +460,18 @@ async function loadToolsTable() {
 
   document.getElementById('toolsBody').innerHTML = rows.length ? rows.map(t => `
     <tr>
+      <td>${toolThumbHtml(t)}</td>
       <td class="mono">${escapeHtml(t.code)}</td>
       <td>${escapeHtml(t.name)}</td>
       <td>${categoryLabel(t.category)}</td>
       <td>${escapeHtml(t.line_name || '—')}</td>
       <td>${statusBadge(t.status)}</td>
       <td class="row-actions">
-        <button class="btn btn-secondary btn-sm" data-action="view" data-id="${t.id}">Ver</button>
-        <button class="btn btn-secondary btn-sm" data-action="edit" data-id="${t.id}">Editar</button>
-        <button class="btn btn-danger btn-sm" data-action="delete" data-id="${t.id}">Eliminar</button>
+        <button class="btn-icon" data-action="view" data-id="${t.id}" title="Ver detalle">👁️</button>
+        <button class="btn-icon" data-action="edit" data-id="${t.id}" title="Editar">✏️</button>
+        <button class="btn-icon btn-icon-danger" data-action="delete" data-id="${t.id}" title="Eliminar">🗑️</button>
       </td>
-    </tr>`).join('') : `<tr class="empty-row"><td colspan="6">Sin resultados. Crea el primero con "+ Nueva herramienta".</td></tr>`;
+    </tr>`).join('') : `<tr class="empty-row"><td colspan="7">Sin resultados. Crea el primero con "+ Nueva herramienta".</td></tr>`;
 }
 
 document.getElementById('toolSearch').addEventListener('input', debounce(loadToolsTable, 250));
@@ -438,6 +541,12 @@ function openToolForm(tool) {
         </select>
       </div>
       <div class="field"><label>Notas</label><textarea name="notes">${escapeHtml(tool?.notes || '')}</textarea></div>
+      <div class="field">
+        <label>Fotografía del equipo, herramienta o fixture (opcional)</label>
+        <div id="toolPhotoPreviewWrap">${isEdit && toolPhotoUrl(tool) ? `<img class="tool-photo-preview" src="${toolPhotoUrl(tool)}" alt="">` : ''}</div>
+        <input type="file" id="toolPhotoInput" accept="image/jpeg,image/png,image/webp">
+        ${isEdit && tool.photo_filename ? `<button type="button" class="btn btn-secondary btn-sm" id="toolPhotoRemoveBtn" style="margin-top:6px;">Quitar foto actual</button>` : ''}
+      </div>
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" id="toolFormCancel">Cancelar</button>
         <button type="submit" class="btn btn-primary">${isEdit ? 'Guardar cambios' : 'Crear'}</button>
@@ -445,13 +554,35 @@ function openToolForm(tool) {
     </form>
   `);
   document.getElementById('toolFormCancel').addEventListener('click', closeModal);
+  const removeBtn = document.getElementById('toolPhotoRemoveBtn');
+  if (removeBtn) {
+    removeBtn.addEventListener('click', async () => {
+      await removeToolPhoto(tool.id, async () => {
+        document.getElementById('toolPhotoPreviewWrap').innerHTML = '';
+        removeBtn.remove();
+        await loadToolsTable();
+      });
+    });
+  }
   document.getElementById('toolForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const payload = Object.fromEntries(fd.entries());
     try {
-      if (isEdit) await api('PUT', `/api/tools/${tool.id}`, payload);
-      else await api('POST', '/api/tools', payload);
+      const saved = isEdit ? await api('PUT', `/api/tools/${tool.id}`, payload) : await api('POST', '/api/tools', payload);
+      const photoFile = document.getElementById('toolPhotoInput').files[0];
+      if (photoFile) {
+        const photoFd = new FormData();
+        photoFd.append('photo', photoFile);
+        const photoRes = await fetch(`/api/tools/${saved.id}/photo`, { method: 'POST', body: photoFd });
+        if (!photoRes.ok) {
+          const photoData = await photoRes.json().catch(() => null);
+          toast(`${isEdit ? 'Activo actualizado' : 'Activo creado'}, pero falló la foto: ${(photoData && photoData.error) || 'error desconocido'}`, true);
+          closeModal();
+          await loadToolsTable();
+          return;
+        }
+      }
       toast(isEdit ? 'Activo actualizado' : 'Activo creado');
       closeModal();
       await loadToolsTable();
@@ -464,6 +595,16 @@ async function openToolDetail(id) {
   toolDetailSub = 'sched';
   const tool = await api('GET', `/api/tools/${id}`);
   document.getElementById('toolDetailTitle').textContent = `${tool.code} — ${tool.name}`;
+  document.getElementById('toolDetailPhoto').innerHTML = `
+    ${toolPhotoUrl(tool) ? `<img class="tool-photo-preview tool-photo-preview-lg" src="${toolPhotoUrl(tool)}" alt="">` : `<div class="tool-thumb tool-thumb-placeholder tool-thumb-lg">${categoryIcon(tool.category)}</div>`}
+    <div class="tool-photo-actions">
+      <button type="button" class="btn btn-secondary btn-sm" id="toolDetailPhotoBtn">${tool.photo_filename ? 'Cambiar foto' : '+ Foto'}</button>
+      ${tool.photo_filename ? `<button type="button" class="btn btn-secondary btn-sm" id="toolDetailPhotoRemoveBtn">Quitar</button>` : ''}
+    </div>
+  `;
+  document.getElementById('toolDetailPhotoBtn').addEventListener('click', () => pickAndUploadPhoto(tool.id, () => openToolDetail(id)));
+  const detailRemoveBtn = document.getElementById('toolDetailPhotoRemoveBtn');
+  if (detailRemoveBtn) detailRemoveBtn.addEventListener('click', () => removeToolPhoto(tool.id, () => openToolDetail(id)));
   document.getElementById('toolDetailMeta').innerHTML = `
     <span class="chip">Categoría: <strong>${categoryLabel(tool.category)}</strong></span>
     <span class="chip">Línea: <strong>${escapeHtml(tool.line_name || 'Sin asignar')}</strong></span>
@@ -503,9 +644,12 @@ async function renderToolDetailBody() {
     }</tbody></table></div>` : `<p class="muted">Sin programaciones para este activo.</p>`;
   } else {
     const rows = await api('GET', `/api/tools/${id}/logs`);
-    body.innerHTML = rows.length ? `<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Técnico</th><th>Turno</th><th>A tiempo</th><th>Descripción</th></tr></thead><tbody>${
-      rows.map(l => `<tr><td class="mono">${fmtDate(l.performed_date)}</td><td>${escapeHtml(l.maintenance_type)}</td><td>${escapeHtml(l.technician_name || '—')}</td><td>${escapeHtml(l.shift || '—')}</td><td>${onTimeBadge(l.on_time)}</td><td>${escapeHtml(l.description || '—')}</td></tr>`).join('')
+    body.innerHTML = rows.length ? `<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Técnico</th><th>Turno</th><th>A tiempo</th><th>Descripción</th><th>Evidencia</th></tr></thead><tbody>${
+      rows.map(l => `<tr><td class="mono">${fmtDate(l.performed_date)}</td><td>${escapeHtml(l.maintenance_type)}</td><td>${escapeHtml(l.technician_name || '—')}</td><td>${escapeHtml(l.shift || '—')}</td><td>${onTimeBadge(l.on_time)}</td><td>${escapeHtml(l.description || '—')}</td><td>${evidenceButtonHtml(l)}</td></tr>`).join('')
     }</tbody></table></div>` : `<p class="muted">Sin mantenimientos registrados para este activo.</p>`;
+    body.querySelectorAll('button[data-action="attach-evidence"]').forEach(btn => {
+      btn.addEventListener('click', () => pickAndUploadEvidence(btn.dataset.id, renderToolDetailBody));
+    });
   }
 }
 
@@ -671,17 +815,21 @@ async function loadLogs() {
       <td>${escapeHtml(l.shift || '—')}</td>
       <td class="mono">${fmtDate(l.performed_date)}</td>
       <td>${onTimeBadge(l.on_time)}</td>
-      <td class="row-actions"><button class="btn btn-danger btn-sm" data-action="delete-log" data-id="${l.id}">Eliminar</button></td>
+      <td class="row-actions">${evidenceButtonHtml(l)}<button class="btn btn-danger btn-sm" data-action="delete-log" data-id="${l.id}">Eliminar</button></td>
     </tr>`).join('') : `<tr class="empty-row"><td colspan="7">Sin mantenimientos registrados.</td></tr>`;
 }
 
 document.getElementById('logsBody').addEventListener('click', async (e) => {
-  const btn = e.target.closest('button[data-action="delete-log"]');
-  if (!btn) return;
-  if (!confirm('¿Eliminar este registro de mantenimiento?')) return;
-  await api('DELETE', `/api/maintenance/logs/${btn.dataset.id}`);
-  toast('Registro eliminado');
-  await loadLogs();
+  const delBtn = e.target.closest('button[data-action="delete-log"]');
+  if (delBtn) {
+    if (!confirm('¿Eliminar este registro de mantenimiento?')) return;
+    await api('DELETE', `/api/maintenance/logs/${delBtn.dataset.id}`);
+    toast('Registro eliminado');
+    await loadLogs();
+    return;
+  }
+  const attachBtn = e.target.closest('button[data-action="attach-evidence"]');
+  if (attachBtn) pickAndUploadEvidence(attachBtn.dataset.id, loadLogs);
 });
 
 document.getElementById('btnNewLog').addEventListener('click', () => openLogForm());
@@ -738,6 +886,11 @@ async function openLogForm() {
         <div id="logChecklistContainer"></div>
       </div>
 
+      <div class="field">
+        <label>Evidencia (PDF, opcional)</label>
+        <input type="file" id="logEvidenceInput" accept="application/pdf">
+      </div>
+
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" id="logCancel">Cancelar</button>
         <button type="submit" class="btn btn-primary">Guardar</button>
@@ -781,7 +934,21 @@ async function openLogForm() {
       notes: row.querySelector('.chk-notes').value.trim() || undefined
     }));
     try {
-      await api('POST', '/api/maintenance/logs', payload);
+      const created = await api('POST', '/api/maintenance/logs', payload);
+      const file = document.getElementById('logEvidenceInput').files[0];
+      if (file) {
+        const evFd = new FormData();
+        evFd.append('evidence', file);
+        const evRes = await fetch(`/api/maintenance/logs/${created.id}/evidence`, { method: 'POST', body: evFd });
+        if (!evRes.ok) {
+          const evData = await evRes.json().catch(() => null);
+          toast('Mantenimiento registrado, pero falló la evidencia: ' + ((evData && evData.error) || 'error desconocido'), true);
+          closeModal();
+          await loadLogs();
+          await loadSchedules();
+          return;
+        }
+      }
       toast('Mantenimiento registrado');
       closeModal();
       await loadLogs();

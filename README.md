@@ -5,11 +5,19 @@ proceso: máquinas, herramientas y procesos, con programación por frecuencia,
 técnico asignado, línea de ensamble y turno, checklist de ejecución, alertas
 de vencimiento y un dashboard interactivo.
 
+## Diseño
+
+Interfaz estilo **Microsoft 365 / Fluent** (barra superior con selector de
+apps, nav rail clara, tarjetas con sombra suave, azul Microsoft) para que se
+sienta como el resto de las herramientas de oficina que ya usa el equipo.
+
 ## Funcionalidad
 
-- **Dashboard**: KPIs (activos, vencidas, próximas a vencer, cumplimiento a
-  90 días), gráfico de estado de mantenimiento por línea de ensamble,
-  filtros por línea y técnico, tablas de vencidos/próximos/recientes.
+- **Dashboard**: panel de mantenimientos preventivos **requeridos vs.
+  realizados por línea de ensamble** (mes en curso) con badges de alerta
+  (vencidas/próximas) para entender la situación de cada línea de un
+  vistazo; KPIs (activos, vencidas, próximas a vencer, cumplimiento a 90
+  días); filtros por línea y técnico; tablas de vencidos/próximos/recientes.
 - **Herramientas**: inventario de máquinas, herramientas, procesos y equipos
   — código, categoría, línea de ensamble, ubicación y estado. Vista de
   detalle con sus programaciones y bitácora.
@@ -62,6 +70,7 @@ routes/maintenance.js        API de programaciones (+ checklist) y bitácora
 routes/notifications.js      API de notificaciones (generación + lectura)
 routes/dashboard.js          API de resumen y desglose por línea
 public/                      Frontend (index.html, css/, js/)
+demo/preview.html            Vista previa autocontenida sin backend (ver demo/README.md)
 ```
 
 ## API (resumen)

@@ -1,10 +1,31 @@
 const express = require('express');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
+const multer = require('multer');
 const db = require('../db/database');
 
 const router = express.Router();
 
 const VALID_STATUS = ['activo', 'en_mantenimiento', 'baja'];
 const VALID_CATEGORY = ['maquina', 'herramienta', 'proceso', 'equipo'];
+
+const UPLOADS_DIR = path.join(__dirname, '..', 'data', 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+const PHOTO_EXT_BY_MIME = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
+
+const uploadPhoto = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOADS_DIR),
+    filename: (req, file, cb) => cb(null, `${crypto.randomUUID()}${PHOTO_EXT_BY_MIME[file.mimetype] || ''}`)
+  }),
+  limits: { fileSize: 8 * 1024 * 1024 }, // 8 MB
+  fileFilter: (req, file, cb) => {
+    if (!PHOTO_EXT_BY_MIME[file.mimetype]) return cb(new Error('Solo se admiten imágenes JPG, PNG o WEBP'));
+    cb(null, true);
+  }
+});
 
 const SELECT_WITH_JOINS = `
   SELECT t.*, l.name AS line_name
@@ -124,7 +145,51 @@ router.put('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
   const existing = db.prepare('SELECT * FROM tools WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Herramienta no encontrada' });
+  if (existing.photo_filename) fs.unlink(path.join(UPLOADS_DIR, existing.photo_filename), () => {});
   db.prepare('DELETE FROM tools WHERE id = ?').run(req.params.id);
+  res.status(204).end();
+});
+
+// POST /api/tools/:id/photo -- subir/reemplazar fotografía del equipo/herramienta/fixture
+router.post('/:id/photo', (req, res) => {
+  uploadPhoto.single('photo')(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message || 'No se pudo subir la imagen' });
+
+    const tool = db.prepare('SELECT * FROM tools WHERE id = ?').get(req.params.id);
+    if (!tool) {
+      if (req.file) fs.unlink(req.file.path, () => {});
+      return res.status(404).json({ error: 'Herramienta no encontrada' });
+    }
+    if (!req.file) return res.status(400).json({ error: 'Adjunta una imagen' });
+
+    // Si ya había una fotografía previa, se reemplaza.
+    if (tool.photo_filename) fs.unlink(path.join(UPLOADS_DIR, tool.photo_filename), () => {});
+
+    db.prepare(`UPDATE tools SET photo_filename = ?, photo_original_name = ?, updated_at = datetime('now') WHERE id = ?`)
+      .run(req.file.filename, req.file.originalname, req.params.id);
+
+    res.status(201).json(db.prepare(`${SELECT_WITH_JOINS} WHERE t.id = ?`).get(req.params.id));
+  });
+});
+
+// GET /api/tools/:id/photo -- ver la fotografía
+router.get('/:id/photo', (req, res) => {
+  const tool = db.prepare('SELECT * FROM tools WHERE id = ?').get(req.params.id);
+  if (!tool || !tool.photo_filename) return res.status(404).json({ error: 'Sin fotografía' });
+  const filePath = path.join(UPLOADS_DIR, tool.photo_filename);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'El archivo ya no está disponible' });
+  res.setHeader('Cache-Control', 'private, max-age=3600');
+  res.sendFile(filePath);
+});
+
+// DELETE /api/tools/:id/photo
+router.delete('/:id/photo', (req, res) => {
+  const tool = db.prepare('SELECT * FROM tools WHERE id = ?').get(req.params.id);
+  if (!tool) return res.status(404).json({ error: 'Herramienta no encontrada' });
+  if (tool.photo_filename) {
+    fs.unlink(path.join(UPLOADS_DIR, tool.photo_filename), () => {});
+    db.prepare(`UPDATE tools SET photo_filename = NULL, photo_original_name = NULL, updated_at = datetime('now') WHERE id = ?`).run(req.params.id);
+  }
   res.status(204).end();
 });
 
