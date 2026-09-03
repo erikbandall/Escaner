@@ -416,6 +416,7 @@ tbody tr:hover { background: var(--surface-2); }
 }
 .icon-btn:hover { background: var(--surface-2); color: var(--text); }
 .icon-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; }
+.icon-btn-emoji { font-size: 1.05rem; line-height: 1; }
 
 .notif-wrap { position: relative; }
 .notif-badge {

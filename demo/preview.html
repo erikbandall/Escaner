@@ -425,6 +425,7 @@ tbody tr:hover { background: var(--surface-2); }
 }
 .icon-btn:hover { background: var(--surface-2); color: var(--text); }
 .icon-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; }
+.icon-btn-emoji { font-size: 1.05rem; line-height: 1; }
 
 .notif-wrap { position: relative; }
 .notif-badge {
@@ -564,6 +565,14 @@ input[type="checkbox"] { accent-color: var(--brand); }
 }
 .demo-banner button:hover { background: var(--warning-bg); }
 </style>
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('toolmaint-theme');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  } catch (e) { /* localStorage no disponible */ }
+})();
+</script>
 </head>
 <body>
 
@@ -583,6 +592,7 @@ input[type="checkbox"] { accent-color: var(--brand); }
       <span class="ms-appname">TOOLMAINT</span>
     </div>
     <div class="ms-topbar-right">
+      <button class="icon-btn icon-btn-emoji" id="btnThemeToggle" aria-label="Cambiar tema claro/oscuro" title="Cambiar tema">🌙</button>
       <div class="notif-wrap">
         <button class="icon-btn" id="btnNotifBell" aria-label="Notificaciones" aria-haspopup="true">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
@@ -869,6 +879,34 @@ input[type="checkbox"] { accent-color: var(--brand); }
 
 <script>
 'use strict';
+
+/* ======================== Tema claro/oscuro ======================== */
+
+const THEME_KEY = 'toolmaint-theme';
+
+function isDarkActive() {
+  const explicit = document.documentElement.getAttribute('data-theme');
+  if (explicit === 'dark') return true;
+  if (explicit === 'light') return false;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+function updateThemeToggleIcon() {
+  const btn = document.getElementById('btnThemeToggle');
+  if (btn) btn.textContent = isDarkActive() ? '☀️' : '🌙';
+}
+
+(function initThemeToggle() {
+  updateThemeToggleIcon();
+  const btn = document.getElementById('btnThemeToggle');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const next = isDarkActive() ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* localStorage no disponible */ }
+    updateThemeToggleIcon();
+  });
+})();
 
 /* ======================================================================
    CAPA DE DATOS LOCAL (reemplaza al backend Express+SQLite para esta

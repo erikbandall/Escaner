@@ -1,5 +1,33 @@
 'use strict';
 
+/* ======================== Tema claro/oscuro ======================== */
+
+const THEME_KEY = 'toolmaint-theme';
+
+function isDarkActive() {
+  const explicit = document.documentElement.getAttribute('data-theme');
+  if (explicit === 'dark') return true;
+  if (explicit === 'light') return false;
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+function updateThemeToggleIcon() {
+  const btn = document.getElementById('btnThemeToggle');
+  if (btn) btn.textContent = isDarkActive() ? '☀️' : '🌙';
+}
+
+(function initThemeToggle() {
+  updateThemeToggleIcon();
+  const btn = document.getElementById('btnThemeToggle');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const next = isDarkActive() ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* localStorage no disponible */ }
+    updateThemeToggleIcon();
+  });
+})();
+
 /* ======================== Helpers ======================== */
 
 async function api(method, url, body) {
