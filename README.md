@@ -58,6 +58,66 @@ Para desarrollo con recarga automática del servidor:
 npm run dev
 ```
 
+## Alojarla en un servidor local de la empresa (solo red interna)
+
+Ideal si todos los que van a usar la app están conectados a la red/WiFi de la
+planta y no se necesita acceso desde fuera. No requiere ningún cambio de
+código ni gastos de nube: la base de datos y las fotos/PDFs quedan
+completamente dentro de la empresa, en el disco de ese equipo.
+
+1. **Elige el equipo que hará de "servidor".** Puede ser una PC de
+   escritorio normal (no necesita ser potente) que se quede encendida
+   durante el horario de uso, de preferencia conectada por cable de red
+   (más estable que WiFi). Instálale [Node.js LTS](https://nodejs.org)
+   (versión 18 o superior).
+
+2. **Copia el proyecto ahí** y instala dependencias:
+   ```bash
+   git clone https://github.com/erikbandall/Escaner.git
+   cd Escaner
+   npm install
+   ```
+   (o copia la carpeta sin `node_modules/` ni `data/` y corre `npm install`
+   ahí mismo).
+
+3. **Dale una IP fija a ese equipo**, para que la dirección no cambie al
+   reiniciar el router: reserva esa IP por su dirección MAC en la
+   configuración del router (recomendado), o configúrale una IP estática
+   manual en las propiedades de red. Anótala, por ejemplo `192.168.1.50`.
+
+4. **Abre el puerto en el firewall** para que otros equipos de la red
+   puedan conectarse:
+   - Windows: Firewall de Windows Defender → Configuración avanzada →
+     Reglas de entrada → Nueva regla → Puerto → TCP → `3000` → Permitir la
+     conexión.
+   - Linux: `sudo ufw allow 3000/tcp`.
+
+5. **Corre la app de forma permanente**, no solo en una terminal abierta
+   (si la cierras o el usuario cierra sesión, `npm start` se detiene). Usa
+   [PM2](https://pm2.keymetrics.io/), que funciona igual en Windows, Linux
+   o Mac:
+   ```bash
+   npm install -g pm2
+   pm2 start server.js --name toolmaint
+   pm2 save
+   pm2 startup    # sigue las instrucciones que imprime para arrancar con el sistema
+   ```
+
+6. **Accede desde cualquier equipo de la red** abriendo en el navegador
+   `http://192.168.1.50:3000` (cambia la IP por la del equipo servidor).
+   Guarda esa dirección como acceso directo/marcador en cada equipo que la
+   use.
+
+7. **Respaldos.** Como los datos ya no viven en la nube, conviene
+   respaldar periódicamente `data/tooling.db` (la base de datos) y
+   `data/uploads/` (fotos y PDFs de evidencia) — por ejemplo copiándolos a
+   diario a una carpeta compartida de red o a un USB, con una tarea
+   programada.
+
+Si más adelante necesitas que alguien acceda desde fuera de la planta (otra
+sucursal, celular con datos, casa), las opciones son una VPN hacia la red de
+la empresa, o migrar el backend a la nube (ver issues/roadmap).
+
 ## Estructura
 
 ```
